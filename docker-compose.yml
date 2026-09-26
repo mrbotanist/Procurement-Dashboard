@@ -1,0 +1,22 @@
+# Local PostgreSQL for FPV Procurement Hub.
+# Start: docker compose up -d    Stop: docker compose down    (data persists in the pgdata volume)
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fpv
+      POSTGRES_PASSWORD: fpv
+      POSTGRES_DB: fpv_procurement
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fpv -d fpv_procurement"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

@@ -1,0 +1,448 @@
+// FPV Procurement Hub data model. See design/README.md ("Data Model") and CLAUDE.md.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  PROCUREMENT_MANAGER
+  FINANCE
+  WAREHOUSE
+  MANAGEMENT
+}
+
+enum PoStatus {
+  DRAFT
+  SENT
+  CONFIRMED
+  CLOSED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+}
+
+enum ProductionStatus {
+  NOT_STARTED
+  IN_PRODUCTION
+  READY
+  DELAYED
+  COMPLETED
+}
+
+enum ShipmentStatus {
+  NOT_SHIPPED
+  READY_TO_SHIP
+  SHIPPED
+  IN_TRANSIT
+  DELIVERED
+}
+
+enum CustomsStatus {
+  NOT_STARTED
+  DOCUMENTS_REQUIRED
+  IN_CLEARANCE
+  CLEARED
+  ON_HOLD
+}
+
+enum InventoryStatus {
+  NOT_RECEIVED
+  PARTIALLY_RECEIVED
+  RECEIVED
+  STOCKED
+}
+
+enum Health {
+  ON_TRACK
+  NEEDS_ATTENTION
+  DELAYED
+}
+
+enum PaymentType {
+  DEPOSIT
+  BALANCE
+  OTHER
+}
+
+enum ShipmentMilestone {
+  SUPPLIER
+  PICKED_UP
+  EXPORT_CUSTOMS
+  IN_TRANSIT
+  IMPORT_CUSTOMS
+  DELIVERED
+}
+
+enum CustomsDocumentType {
+  COMMERCIAL_INVOICE
+  PACKING_LIST
+  CERTIFICATE_OF_ORIGIN
+  IMPORT_DOCUMENTS
+  CUSTOMS_DECLARATION
+}
+
+enum CustomsDocumentStatus {
+  PENDING
+  RECEIVED
+  MISSING
+}
+
+enum DocumentType {
+  QUOTATION
+  PROFORMA_INVOICE
+  PURCHASE_ORDER
+  COMMERCIAL_INVOICE
+  PACKING_LIST
+  PAYMENT_RECEIPT
+  CERTIFICATE_OF_ORIGIN
+  AIR_WAYBILL
+  BILL_OF_LADING
+  CUSTOMS
+  CORRESPONDENCE
+  OTHER
+}
+
+enum ActivityKind {
+  NOTE
+  STATUS_CHANGE
+  PAYMENT
+  SYSTEM
+}
+
+enum NotificationTone {
+  RED
+  ORANGE
+  BLUE
+}
+
+// ─── People ──────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  createdPurchaseOrders PurchaseOrder[] @relation("PoCreatedBy")
+  uploadedDocuments     Document[]
+  activity              ActivityLog[]
+  notifications         Notification[]
+}
+
+// ─── Master data ─────────────────────────────────────────────────────────────
+
+model Supplier {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  /// PO number prefix, e.g. "GE" for GEPRC → GE-26091
+  code          String   @unique
+  city          String?
+  country       String
+  contactName   String?
+  email         String?
+  phone         String?
+  website       String?
+  paymentTerms  String?
+  currency      String   @default("USD")
+  incoterm      String?
+  incotermPlace String?
+  notes         String?
+  /// Computed from completed orders; stored for fast listing.
+  leadTimeDays  Int?
+  /// Computed from completed orders (0–100); stored for fast listing.
+  onTimeRate    Decimal? @db.Decimal(5, 2)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  purchaseOrders PurchaseOrder[]
+  documents      Document[]
+}
+
+model Brand {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  budgets        BrandBudget[]
+  products       Product[]
+  purchaseOrders PurchaseOrder[]
+}
+
+model BrandBudget {
+  id        String   @id @default(cuid())
+  brandId   String
+  year      Int
+  amountUsd Decimal  @db.Decimal(14, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@unique([brandId, year])
+}
+
+model Product {
+  id             String   @id @default(cuid())
+  sku            String   @unique
+  name           String
+  brandId        String
+  category       String
+  stockQty       Int      @default(0)
+  /// Units sold per day; entered or computed from sales.
+  dailySalesRate Decimal  @default(0) @db.Decimal(10, 3)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  brand   Brand    @relation(fields: [brandId], references: [id])
+  poItems POItem[]
+
+  @@index([brandId])
+}
+
+// ─── Purchase orders ─────────────────────────────────────────────────────────
+
+model PurchaseOrder {
+  id                     String    @id @default(cuid())
+  number                 String    @unique
+  supplierId             String
+  brandId                String
+  currency               String    @default("USD")
+  orderDate              DateTime  @db.Date
+  paymentTerms           String?
+  incoterm               String?
+  plannedCarrier         String?
+  notes                  String?
+  expectedProductionDate DateTime? @db.Date
+  expectedShipDate       DateTime? @db.Date
+  eta                    DateTime? @db.Date
+  productionStartedAt    DateTime? @db.Date
+  productionCompletedAt  DateTime? @db.Date
+  productionProgressPct  Int       @default(0)
+  productionNote         String?
+  lastSupplierUpdateAt   DateTime?
+  sentAt                 DateTime?
+  confirmedAt            DateTime?
+  closedAt               DateTime?
+
+  poStatus         PoStatus         @default(DRAFT)
+  paymentStatus    PaymentStatus    @default(PENDING)
+  productionStatus ProductionStatus @default(NOT_STARTED)
+  shipmentStatus   ShipmentStatus   @default(NOT_SHIPPED)
+  customsStatus    CustomsStatus    @default(NOT_STARTED)
+  inventoryStatus  InventoryStatus  @default(NOT_RECEIVED)
+
+  /// Computed by lib/domain/health; never set directly.
+  health       Health @default(ON_TRACK)
+  healthReason String @default("")
+
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  supplier      Supplier       @relation(fields: [supplierId], references: [id])
+  brand         Brand          @relation(fields: [brandId], references: [id])
+  createdBy     User?          @relation("PoCreatedBy", fields: [createdById], references: [id])
+  items         POItem[]
+  payments      Payment[]
+  shipments     Shipment[]
+  documents     Document[]
+  activity      ActivityLog[]
+  notifications Notification[]
+
+  @@index([supplierId])
+  @@index([brandId])
+  @@index([health])
+  @@index([orderDate])
+}
+
+model POItem {
+  id          String  @id @default(cuid())
+  poId        String
+  productId   String
+  qtyOrdered  Int
+  qtyReceived Int     @default(0)
+  unitPrice   Decimal @db.Decimal(12, 2)
+  discountPct Decimal @default(0) @db.Decimal(5, 2)
+  taxPct      Decimal @default(0) @db.Decimal(5, 2)
+
+  po      PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  product Product       @relation(fields: [productId], references: [id])
+
+  @@index([poId])
+  @@index([productId])
+}
+
+model Payment {
+  id                String      @id @default(cuid())
+  poId              String
+  type              PaymentType
+  amount            Decimal     @db.Decimal(14, 2)
+  dueDate           DateTime    @db.Date
+  paidDate          DateTime?   @db.Date
+  method            String?
+  bankReference     String?
+  receiptDocumentId String?     @unique
+  notes             String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  po      PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  receipt Document?     @relation("PaymentReceipt", fields: [receiptDocumentId], references: [id], onDelete: SetNull)
+
+  @@index([poId])
+  @@index([dueDate])
+}
+
+// ─── Shipments & customs ─────────────────────────────────────────────────────
+
+model Shipment {
+  id             String            @id @default(cuid())
+  poId           String
+  carrier        String
+  trackingNumber String?
+  trackingUrl    String?
+  origin         String?
+  destination    String            @default("Dubai, UAE")
+  shipDate       DateTime?         @db.Date
+  eta            DateTime?         @db.Date
+  actualArrival  DateTime?         @db.Date
+  shippingCost   Decimal?          @db.Decimal(12, 2)
+  milestone      ShipmentMilestone @default(SUPPLIER)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  po               PurchaseOrder            @relation(fields: [poId], references: [id], onDelete: Cascade)
+  milestoneEvents  ShipmentMilestoneEvent[]
+  customsDocuments CustomsDocument[]
+  customsCost      CustomsCost?
+  documents        Document[]
+
+  @@index([poId])
+}
+
+/// Date each milestone was reached, for the shipment timeline.
+model ShipmentMilestoneEvent {
+  id         String            @id @default(cuid())
+  shipmentId String
+  milestone  ShipmentMilestone
+  occurredAt DateTime          @db.Date
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@unique([shipmentId, milestone])
+}
+
+model CustomsDocument {
+  id         String                @id @default(cuid())
+  shipmentId String
+  type       CustomsDocumentType
+  status     CustomsDocumentStatus @default(PENDING)
+  documentId String?               @unique
+  updatedAt  DateTime              @updatedAt
+
+  shipment Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  document Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@unique([shipmentId, type])
+}
+
+/// Actual customs costs. When absent, the UI shows the estimate from lib/domain/customs.
+model CustomsCost {
+  shipmentId       String   @id
+  duty             Decimal  @db.Decimal(12, 2)
+  importVat        Decimal  @db.Decimal(12, 2)
+  clearanceCharges Decimal  @db.Decimal(12, 2)
+  updatedAt        DateTime @updatedAt
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+}
+
+// ─── Documents ───────────────────────────────────────────────────────────────
+
+model Document {
+  id           String       @id @default(cuid())
+  poId         String?
+  supplierId   String?
+  shipmentId   String?
+  type         DocumentType
+  fileName     String
+  /// Path under the storage root (local disk for now; S3 key later).
+  storageKey   String       @unique
+  mimeType     String?
+  size         Int          @default(0)
+  uploadedById String?
+  createdAt    DateTime     @default(now())
+
+  po              PurchaseOrder?   @relation(fields: [poId], references: [id], onDelete: SetNull)
+  supplier        Supplier?        @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  shipment        Shipment?        @relation(fields: [shipmentId], references: [id], onDelete: SetNull)
+  uploadedBy      User?            @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  paymentReceipt  Payment?         @relation("PaymentReceipt")
+  customsDocument CustomsDocument?
+
+  @@index([poId])
+  @@index([supplierId])
+  @@index([type])
+}
+
+// ─── Activity & notifications ────────────────────────────────────────────────
+
+model ActivityLog {
+  id         String       @id @default(cuid())
+  poId       String?
+  userId     String?
+  /// "Supplier", "System" or the user's name at the time.
+  actorLabel String
+  text       String
+  kind       ActivityKind
+  entityType String?
+  entityId   String?
+  before     Json?
+  after      Json?
+  createdAt  DateTime     @default(now())
+
+  po   PurchaseOrder? @relation(fields: [poId], references: [id], onDelete: Cascade)
+  user User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([poId, createdAt])
+  @@index([createdAt])
+}
+
+model Notification {
+  id         String           @id @default(cuid())
+  /// Null means team-wide.
+  userId     String?
+  tone       NotificationTone
+  /// Delay | Payment | Confirmation | Customs | Shipment | Update
+  kind       String
+  title      String
+  detail     String?
+  poId       String?
+  /// Lets the rules engine avoid creating the same notification twice.
+  dedupeKey  String?          @unique
+  resolvedAt DateTime?
+  createdAt  DateTime         @default(now())
+
+  user User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  po   PurchaseOrder? @relation(fields: [poId], references: [id], onDelete: Cascade)
+
+  @@index([resolvedAt])
+  @@index([poId])
+}

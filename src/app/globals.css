@@ -1,0 +1,185 @@
+@import "tailwindcss";
+
+/* Design tokens from design/README.md → "Design Tokens". */
+@theme {
+  --font-sans: "Hanken Grotesk Variable", "Hanken Grotesk", system-ui, sans-serif;
+
+  --color-page: #f4f5f7;
+  --color-card: #ffffff;
+  --color-subtle: #f7f8f9;
+  --color-subtle-2: #eef0f2;
+  --color-surface: #f0f2f4;
+  --color-line: #e3e5e8;
+  --color-line-input: #dcdfe3;
+  --color-ink: #17181b;
+  --color-ink-hover: #2e3035;
+  --color-secondary: #62666d;
+  --color-muted: #80848b;
+  --color-accent: oklch(0.6 0.2 25);
+  --color-focus: oklch(0.6 0.15 255);
+
+  --color-neutral-100: #f7f8f9;
+  --color-neutral-200: #eef0f2;
+  --color-neutral-300: #e3e5e8;
+  --color-neutral-400: #cdd0d5;
+  --color-neutral-500: #a3a7ae;
+  --color-neutral-600: #80848b;
+  --color-neutral-700: #62666d;
+  --color-neutral-800: #45484e;
+  --color-neutral-900: #2b2d31;
+
+  /* Status tones: bg / fg / dot */
+  --color-green-bg: oklch(0.95 0.04 155);
+  --color-green-fg: oklch(0.45 0.11 155);
+  --color-green-dot: oklch(0.65 0.15 155);
+  --color-orange-bg: oklch(0.95 0.05 80);
+  --color-orange-fg: oklch(0.5 0.11 65);
+  --color-orange-dot: oklch(0.75 0.15 70);
+  --color-red-bg: oklch(0.95 0.035 25);
+  --color-red-fg: oklch(0.5 0.17 25);
+  --color-red-dot: oklch(0.62 0.2 25);
+  --color-blue-bg: oklch(0.95 0.03 255);
+  --color-blue-fg: oklch(0.47 0.13 255);
+  --color-blue-dot: oklch(0.6 0.15 255);
+  --color-gray-bg: #eef0f2;
+  --color-gray-fg: #50535a;
+  --color-gray-dot: #a3a7ae;
+
+  /* Calendar event types */
+  --color-ev-payment: oklch(0.72 0.15 70);
+  --color-ev-production: oklch(0.5 0.12 300);
+  --color-ev-shipment: oklch(0.52 0.15 255);
+  --color-ev-customs: oklch(0.62 0.2 25);
+  --color-ev-arrival: oklch(0.58 0.13 150);
+
+  --radius-control: 10px;
+  --radius-card: 16px;
+  --radius-kpi: 14px;
+  --radius-tile: 12px;
+  --radius-chip: 5px;
+
+  --shadow-card: 0 1px 2px rgba(20, 22, 28, 0.04);
+  --shadow-pop: 0 12px 32px rgba(45, 43, 43, 0.22);
+}
+
+@layer base {
+  html,
+  body {
+    background: var(--color-page);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.12;
+  }
+  :focus {
+    outline: none;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+  /* Every figure uses tabular numerals. */
+  body {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex: none;
+    white-space: nowrap;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--color-ink);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-control);
+    padding: 8px 14px;
+    text-decoration: none;
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--color-ink);
+    color: #fff;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-ink-hover);
+  }
+  .btn-primary:active:not(:disabled) {
+    background: #000;
+  }
+  .btn-secondary {
+    background: #fff;
+    border-color: var(--color-line-input);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background: var(--color-page);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--color-subtle-2);
+  }
+  .btn-icon {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+  }
+
+  .input {
+    width: 100%;
+    min-height: 36px;
+    padding: 6px 10px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--color-ink);
+    background: #fff;
+    border: 1px solid var(--color-line-input);
+    border-radius: var(--radius-control);
+  }
+  .input:hover {
+    border-color: color-mix(in srgb, var(--color-ink) 45%, transparent);
+  }
+  .input:focus-visible {
+    border-color: var(--color-focus);
+    outline-offset: 0;
+  }
+
+  .field > label {
+    display: block;
+    font-size: 12px;
+    margin-bottom: 5px;
+    color: color-mix(in srgb, var(--color-ink) 70%, transparent);
+  }
+
+  .card {
+    background: var(--color-card);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+    padding: 20px 22px;
+    box-shadow: var(--shadow-card);
+  }
+
+  .seg {
+    display: inline-flex;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid var(--color-line-input);
+    border-radius: var(--radius-control);
+  }
+}

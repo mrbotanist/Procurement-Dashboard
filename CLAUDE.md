@@ -1,3 +1,5 @@
+@AGENTS.md
+
 # FPV Procurement Hub
 
 Procurement management web app for an FPV drone store in Dubai. It tracks every purchase order (PO) from quotation to stock on the shelf: supplier confirmation, payments, production, shipment, customs, receiving, brand budgets and supplier performance.
@@ -16,15 +18,22 @@ Product promise: **"One place to know exactly where every purchase stands."**
 
 ## Stack
 
-- Next.js (App Router) + TypeScript (strict). Server Components by default; client components only for interactivity.
-- Tailwind CSS configured with the design tokens below. Font: Hanken Grotesk via `next/font/google`.
-- PostgreSQL + Prisma (migrations + seed ported from `fpv-data-v2.js`). Local Postgres via `docker-compose.yml`.
-- Auth.js with five roles and server-side route/action protection.
-- S3-compatible storage (R2/S3) with presigned uploads.
+- Next.js 16 (App Router) + TypeScript (strict). Server Components by default; client components only for interactivity. Next 16 renamed middleware to `src/proxy.ts`; read `node_modules/next/dist/docs/` before using an API you're unsure of.
+- Tailwind CSS 4. Design tokens live in `src/app/globals.css` (`@theme`), plus a few component classes (`.btn`, `.input`, `.card`, `.seg`, `.field`). Font: Hanken Grotesk, self-hosted via `@fontsource-variable/hanken-grotesk` (works offline).
+- PostgreSQL 16 + Prisma 7 (`prisma-client` generator → `src/generated/prisma`, `@prisma/adapter-pg`, config in `prisma.config.ts`). Seed ported from `fpv-data-v2.js`.
+- Auth.js v5 (next-auth beta), credentials provider (email + bcrypt password), JWT sessions. Five roles; permissions in `src/lib/auth/permissions.ts`.
 - Zod on every API/server-action input.
-- Jobs: daily cron to recalculate health/overdue/delayed and create notifications. Email digest via Resend.
 - Tests: Vitest for domain rules, Playwright for key flows.
 - Icons: `lucide-react`.
+
+## Hosting: local machine
+
+The app is hosted **locally** for now (no cloud server). Build for that:
+- Database: PostgreSQL via `docker-compose.yml` or a native install. `DATABASE_URL` in `.env`.
+- Files: uploads go to local disk under `STORAGE_DIR` (default `./storage`, git-ignored) behind a small storage interface (`src/lib/storage.ts`, step 5), so S3/R2 can be swapped in later. Serve downloads through an authenticated route, never from `public/`.
+- Jobs: the daily health/notification job runs in-process with `node-cron`, started from `src/instrumentation.ts` (step 7), plus an `npm` script to run it by hand. Also recalc on app start in case the machine was off at the scheduled time.
+- Email: none for now; notifications are in-app. Keep the digest behind an optional SMTP setting.
+- Runs with `npm run build && npm start` on port 3000; `AUTH_TRUST_HOST=true` is required outside Vercel.
 
 ## Conventions
 
@@ -137,15 +146,26 @@ src/
     validation/              Zod schemas shared by API and forms
     auth/                    Auth.js config, role → permission map, requireRole()
     db.ts                    Prisma client singleton
-    storage.ts               S3/R2 presign helpers
+    storage.ts               file storage (local disk now; S3/R2 later)
+  generated/prisma/          Prisma client (generated, git-ignored)
+  proxy.ts                   signed-out visitors → /login
+  auth.ts                    Auth.js config
   server/
     services/                mutations: transaction + permission + ActivityLog + health recalc
     queries/                 read models for each screen (dashboard, orders, analytics, ...)
     jobs/                    daily recalculation, notification generation, email digest
 tests/e2e/                   Playwright
 docker-compose.yml           local Postgres
+prisma.config.ts             Prisma CLI config (datasource URL, seed command)
 ```
 
 ## Commands
 
-Not scaffolded yet (step 1). This section will list dev, test, lint, migrate and seed commands once they exist.
+- `npm run dev` / `npm run build` / `npm start`
+- `npm test` (Vitest), `npm run lint`, `npm run typecheck`
+- `npm run db:migrate` (new migration after schema change), `npm run db:deploy`, `npm run db:seed` (wipes + reloads sample data), `npm run db:reset`, `npm run db:studio`
+- After changing `prisma/schema.prisma`: `npm run db:migrate -- --name <change>` (regenerates the client).
+
+Before committing: `npm run typecheck && npm run lint && npm test && npm run build`.
+
+Seeded users (password `procurement`): admin@, rashid.khan@, finance@, warehouse@, management@ fpvstore.ae.
