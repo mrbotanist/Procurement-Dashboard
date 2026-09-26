@@ -49,6 +49,7 @@ export const NAV: NavGroup[] = [
       { label: "Current Stock", href: "/inventory", permission: "view:inventory" },
       { label: "Incoming Stock", href: "/inventory?tab=incoming", permission: "view:inventory" },
       { label: "Reorder Alerts", href: "/inventory?tab=reorder", permission: "view:inventory", counter: "reorder" },
+      { label: "Products", href: "/products", permission: "view:inventory" },
     ],
   },
   {

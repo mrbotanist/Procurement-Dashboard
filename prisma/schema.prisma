@@ -382,6 +382,8 @@ model Document {
   supplierId   String?
   shipmentId   String?
   type         DocumentType
+  /// Optional display name, e.g. "Distributor agreement 2026".
+  title        String?
   fileName     String
   /// Path under the storage root (local disk for now; S3 key later).
   storageKey   String       @unique

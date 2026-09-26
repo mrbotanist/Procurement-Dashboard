@@ -109,3 +109,54 @@ const TONE_BY_LABEL: Record<string, Tone> = {
 export function toneFor(label: string): Tone {
   return TONE_BY_LABEL[label] ?? "gray";
 }
+
+export const DOCUMENT_TYPE_LABEL: Record<import("@/generated/prisma/enums").DocumentType, string> = {
+  QUOTATION: "Quotation",
+  PROFORMA_INVOICE: "Proforma Invoice",
+  PURCHASE_ORDER: "Purchase Order",
+  COMMERCIAL_INVOICE: "Commercial Invoice",
+  PACKING_LIST: "Packing List",
+  PAYMENT_RECEIPT: "Payment Receipt",
+  CERTIFICATE_OF_ORIGIN: "Certificate of Origin",
+  AIR_WAYBILL: "Air Waybill",
+  BILL_OF_LADING: "Bill of Lading",
+  CUSTOMS: "Customs",
+  CORRESPONDENCE: "Correspondence",
+  OTHER: "Other",
+};
+
+export const PAYMENT_TYPE_LABEL: Record<import("@/generated/prisma/enums").PaymentType, string> = {
+  DEPOSIT: "Deposit",
+  BALANCE: "Balance",
+  OTHER: "Payment",
+};
+
+export const MILESTONE_LABEL: Record<import("@/generated/prisma/enums").ShipmentMilestone, string> = {
+  SUPPLIER: "Supplier",
+  PICKED_UP: "Picked Up",
+  EXPORT_CUSTOMS: "Export Customs",
+  IN_TRANSIT: "In Transit",
+  IMPORT_CUSTOMS: "Import Customs",
+  DELIVERED: "Delivered",
+};
+
+/** Display labels for a PO's independent statuses. */
+export function poLabels(p: {
+  poStatus: PoStatus;
+  paymentStatus: PaymentStatus;
+  productionStatus: ProductionStatus;
+  shipmentStatus: ShipmentStatus;
+  customsStatus: CustomsStatus;
+  inventoryStatus: InventoryStatus;
+  health: Health;
+}) {
+  return {
+    po: PO_STATUS_LABEL[p.poStatus],
+    pay: PAYMENT_STATUS_LABEL[p.paymentStatus],
+    prod: PRODUCTION_STATUS_LABEL[p.productionStatus],
+    ship: SHIPMENT_STATUS_LABEL[p.shipmentStatus],
+    customs: CUSTOMS_STATUS_LABEL[p.customsStatus],
+    inv: INVENTORY_STATUS_LABEL[p.inventoryStatus],
+    health: HEALTH_LABEL[p.health],
+  };
+}

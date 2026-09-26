@@ -164,7 +164,7 @@ prisma.config.ts             Prisma CLI config (datasource URL, seed command)
 - `npm run dev` / `npm run build` / `npm start`
 - `npm test` (Vitest), `npm run lint`, `npm run typecheck`
 - `npm run db:migrate` (new migration after schema change), `npm run db:deploy`, `npm run db:seed` (wipes + reloads sample data), `npm run db:reset`, `npm run db:studio`
-- After changing `prisma/schema.prisma`: `npm run db:migrate -- --name <change>` (regenerates the client).
+- After changing `prisma/schema.prisma`: `npm run db:migrate -- --name <change>`, then `npx prisma generate` (Prisma 7 migrate does not regenerate the client).
 
 Before committing: `npm run typecheck && npm run lint && npm test && npm run build`.
 

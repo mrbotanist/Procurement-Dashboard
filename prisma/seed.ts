@@ -310,10 +310,27 @@ async function main() {
   const pm = users.get("PROCUREMENT_MANAGER")!;
 
   const suppliers = new Map<string, { id: string; origin: string; terms: string }>();
-  for (const [name, code, city, country, contactName, email, phone, website, paymentTerms, incoterm, incotermPlace] of SUPPLIERS) {
+  for (const [name, code, city, country, contactName, email, phone, website, paymentTerms, incoterm, incotermPlace, , onTime] of SUPPLIERS) {
+    const notes = onTime < 85
+      ? "On-time rate below 85% this year. Ask for weekly production photos on open orders."
+      : "Reliable on lead times. Confirm firmware version on each batch before dispatch.";
     const s = await db.supplier.create({
-      data: { name, code, city, country, contactName, email, phone, website, paymentTerms, incoterm, incotermPlace },
+      data: { name, code, city, country, contactName, email, phone, website, paymentTerms, incoterm, incotermPlace, notes, createdAt: D("2023-03-01") },
     });
+    const slug = name.toLowerCase().replace(/[^a-z]/g, "");
+    for (const [title, fileName, date, type] of [
+      ["Distributor agreement 2026", `agreement-${slug}-2026.pdf`, "2026-01-08", "OTHER"],
+      ["Price list Q3", `pricelist-${slug}-q3.xlsx`, "2026-07-02", "QUOTATION"],
+      ["Bank details (verified)", `bank-${slug}.pdf`, "2026-03-14", "CORRESPONDENCE"],
+      ["Product certifications", `ce-fcc-${slug}.pdf`, "2026-02-20", "OTHER"],
+    ] as const) {
+      await db.document.create({
+        data: {
+          supplierId: s.id, type, title, fileName, storageKey: `seed/${code}/${fileName}`, createdAt: D(date),
+          mimeType: fileName.endsWith(".xlsx") ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "application/pdf",
+        },
+      });
+    }
     suppliers.set(name, { id: s.id, origin: city === country ? city : `${city}, ${country}`, terms: paymentTerms });
   }
 
