@@ -55,7 +55,10 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/docume
   const qs = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams();
     for (const [k, v] of Object.entries(sp)) if (typeof v === "string") next.set(k, v);
-    for (const [k, v] of Object.entries(patch)) (v ? next.set(k, v) : next.delete(k));
+    for (const [k, v] of Object.entries(patch)) {
+      if (v) next.set(k, v);
+      else next.delete(k);
+    }
     const s = next.toString();
     return s ? `/documents?${s}` : "/documents";
   };
