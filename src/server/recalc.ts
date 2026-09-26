@@ -47,6 +47,7 @@ export function derivedFields(po: PoForRecalc, today: IsoDate) {
       overdueSince: pay.overdueSince,
       nextDueDate: pay.nextDueDate,
       missingCustomsDoc,
+      received: po.inventoryStatus === "RECEIVED" || po.inventoryStatus === "STOCKED",
     },
     today,
   );

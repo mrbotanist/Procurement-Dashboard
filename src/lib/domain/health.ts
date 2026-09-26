@@ -16,6 +16,8 @@ export interface HealthInput {
   nextDueDate: IsoDate | null;
   /** Display name of the first missing customs document, e.g. "Certificate of origin". */
   missingCustomsDoc: string | null;
+  /** All goods received (inventory RECEIVED or STOCKED). */
+  received?: boolean;
 }
 
 export interface HealthResult {
@@ -40,5 +42,6 @@ export function computeHealth(p: HealthInput, today: IsoDate): HealthResult {
       return { health: "NEEDS_ATTENTION", reason: d <= 0 ? "Balance due today" : `Balance due in ${d} ${d === 1 ? "day" : "days"}` };
     }
   }
+  if (p.received) return { health: "ON_TRACK", reason: "All goods received" };
   return { health: "ON_TRACK", reason: p.eta ? `ETA ${fmtDate(p.eta)}` : "Progressing to plan" };
 }

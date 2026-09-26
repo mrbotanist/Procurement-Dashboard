@@ -51,6 +51,10 @@ describe("computeHealth", () => {
     expect(h({})).toEqual({ health: "ON_TRACK", reason: "ETA Oct 9" });
     expect(h({ eta: null }).reason).toBe("Progressing to plan");
   });
+  it("received goods → On Track, all goods received", () => {
+    expect(h({ received: true })).toEqual({ health: "ON_TRACK", reason: "All goods received" });
+    expect(h({ received: true, paymentStatus: "OVERDUE", overdueSince: "2026-09-20" }).health).toBe("DELAYED");
+  });
   it("rules are evaluated in order: overdue beats draft", () => {
     expect(h({ poStatus: "DRAFT", paymentStatus: "OVERDUE", overdueSince: "2026-09-20" }).health).toBe("DELAYED");
   });
