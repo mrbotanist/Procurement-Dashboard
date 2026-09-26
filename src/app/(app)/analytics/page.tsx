@@ -160,22 +160,17 @@ export default async function AnalyticsPage({ searchParams }: PageProps<"/analyt
 function StatusDonut({ status, total }: { status: { k: string; v: number }[]; total: number }) {
   const r = 60;
   const c = 2 * Math.PI * r;
-  let offset = 0;
+  const lens = status.map((s) => (total ? (s.v / total) * c : 0));
+  const offsets = lens.map((_, i) => lens.slice(0, i).reduce((a, b) => a + b, 0));
   return (
     <div className="flex flex-wrap items-center gap-8 pt-2">
       <svg viewBox="0 0 160 160" className="size-40 flex-none" role="img" aria-label={status.map((s) => `${s.k}: ${s.v}`).join(", ")}>
         <circle cx="80" cy="80" r={r} fill="none" stroke="#eef0f2" strokeWidth="22" />
-        {status.map((s, i) => {
-          const len = total ? (s.v / total) * c : 0;
-          const gap = len > 4 ? 2 : 0;
-          const el = (
-            <circle key={s.k} cx="80" cy="80" r={r} fill="none" stroke={STATUS_COLOR[i]} strokeWidth="22" strokeDasharray={`${Math.max(0, len - gap)} ${c}`} strokeDashoffset={-offset} transform="rotate(-90 80 80)">
-              <title>{`${s.k}: ${s.v}`}</title>
-            </circle>
-          );
-          offset += len;
-          return el;
-        })}
+        {status.map((s, i) => (
+          <circle key={s.k} cx="80" cy="80" r={r} fill="none" stroke={STATUS_COLOR[i]} strokeWidth="22" strokeDasharray={`${Math.max(0, lens[i] - (lens[i] > 4 ? 2 : 0))} ${c}`} strokeDashoffset={-offsets[i]} transform="rotate(-90 80 80)">
+            <title>{`${s.k}: ${s.v}`}</title>
+          </circle>
+        ))}
         <text x="80" y="78" textAnchor="middle" className="fill-ink text-[28px] font-semibold">
           {total}
         </text>
