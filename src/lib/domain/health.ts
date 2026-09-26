@@ -12,6 +12,8 @@ export interface HealthInput {
   eta: IsoDate | null;
   /** Earliest due date among unpaid payments that are past due. */
   overdueSince: IsoDate | null;
+  /** Which payment is overdue: "Deposit", "Balance" (default) or "Payment". */
+  overdueLabel?: string | null;
   /** Earliest due date among unpaid payments that are not yet past due. */
   nextDueDate: IsoDate | null;
   /** Display name of the first missing customs document, e.g. "Certificate of origin". */
@@ -27,7 +29,7 @@ export interface HealthResult {
 
 export function computeHealth(p: HealthInput, today: IsoDate): HealthResult {
   if (p.paymentStatus === "OVERDUE") {
-    return { health: "DELAYED", reason: p.overdueSince ? `Balance overdue since ${fmtDate(p.overdueSince)}` : "Payment overdue" };
+    return { health: "DELAYED", reason: p.overdueSince ? `${p.overdueLabel ?? "Balance"} overdue since ${fmtDate(p.overdueSince)}` : "Payment overdue" };
   }
   if (p.productionStatus === "DELAYED") return { health: "DELAYED", reason: "Production past expected date" };
   if (p.customsStatus === "ON_HOLD") return { health: "DELAYED", reason: "Held at customs" };

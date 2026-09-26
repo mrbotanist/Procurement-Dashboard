@@ -17,7 +17,7 @@ export const num = (d: { toNumber(): number } | number | null | undefined): numb
 
 export const recalcInclude = {
   items: { select: { qtyOrdered: true, unitPrice: true, discountPct: true, taxPct: true } },
-  payments: { select: { amount: true, dueDate: true, paidDate: true } },
+  payments: { select: { amount: true, dueDate: true, paidDate: true, type: true } },
   shipments: { select: { customsDocuments: { select: { type: true, status: true } } } },
 } as const;
 
@@ -28,7 +28,7 @@ export function derivedFields(po: PoForRecalc, today: IsoDate) {
     po.items.map((i) => ({ qty: i.qtyOrdered, unitPrice: num(i.unitPrice), discountPct: num(i.discountPct), taxPct: num(i.taxPct) })),
   );
   const pay = derivePaymentState(
-    po.payments.map((p) => ({ amount: num(p.amount), dueDate: toIsoDate(p.dueDate), paidDate: toIsoDate(p.paidDate) })),
+    po.payments.map((p) => ({ amount: num(p.amount), dueDate: toIsoDate(p.dueDate), paidDate: toIsoDate(p.paidDate), type: p.type })),
     total,
     today,
   );
@@ -45,6 +45,7 @@ export function derivedFields(po: PoForRecalc, today: IsoDate) {
       customsStatus: po.customsStatus,
       eta: toIsoDate(po.eta),
       overdueSince: pay.overdueSince,
+      overdueLabel: pay.overdueLabel,
       nextDueDate: pay.nextDueDate,
       missingCustomsDoc,
       received: po.inventoryStatus === "RECEIVED" || po.inventoryStatus === "STOCKED",

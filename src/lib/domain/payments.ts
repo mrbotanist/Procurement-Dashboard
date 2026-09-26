@@ -7,6 +7,7 @@ export interface PaymentRow {
   amount: number;
   dueDate: IsoDate;
   paidDate: IsoDate | null;
+  type?: "DEPOSIT" | "BALANCE" | "OTHER";
 }
 
 export interface PaymentState {
@@ -17,6 +18,8 @@ export interface PaymentState {
   overdueSince: IsoDate | null;
   /** Earliest due date among unpaid payments not yet past due. */
   nextDueDate: IsoDate | null;
+  /** "Deposit" / "Balance" / "Payment" for the earliest overdue payment. */
+  overdueLabel: string | null;
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -41,7 +44,16 @@ export function derivePaymentState(payments: PaymentRow[], total: number, today:
   else if (paid > 0) status = "PARTIALLY_PAID";
   else status = "PENDING";
 
-  return { status, paid, outstanding, overdueSince: status === "PAID" ? null : overdueSince, nextDueDate: status === "PAID" ? null : nextDueDate };
+  const overdueRow = overdueSince ? payments.find((p) => !p.paidDate && p.dueDate === overdueSince) : undefined;
+  const overdueLabel = overdueRow ? (overdueRow.type === "DEPOSIT" ? "Deposit" : overdueRow.type === "OTHER" ? "Payment" : "Balance") : null;
+  return {
+    status,
+    paid,
+    outstanding,
+    overdueSince: status === "PAID" ? null : overdueSince,
+    nextDueDate: status === "PAID" ? null : nextDueDate,
+    overdueLabel: status === "PAID" ? null : overdueLabel,
+  };
 }
 
 /**

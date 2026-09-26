@@ -21,6 +21,9 @@ describe("computeHealth", () => {
       reason: "Balance overdue since Sep 20",
     });
   });
+  it("1. overdue deposit names the deposit", () => {
+    expect(h({ paymentStatus: "OVERDUE", overdueSince: "2026-09-25", overdueLabel: "Deposit" }).reason).toBe("Deposit overdue since Sep 25");
+  });
   it("2. production delayed → Delayed", () => {
     expect(h({ productionStatus: "DELAYED" })).toEqual({ health: "DELAYED", reason: "Production past expected date" });
   });

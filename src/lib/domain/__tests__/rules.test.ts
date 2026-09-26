@@ -39,8 +39,10 @@ describe("derivePaymentState", () => {
   it("nothing paid and nothing due yet → PENDING", () => {
     expect(derivePaymentState([{ amount: 2100, dueDate: "2026-09-27", paidDate: null }], 4200, TODAY).status).toBe("PENDING");
   });
-  it("nothing paid and a due date passed → OVERDUE", () => {
-    expect(derivePaymentState([{ amount: 2100, dueDate: "2026-09-25", paidDate: null }], 4200, TODAY).status).toBe("OVERDUE");
+  it("nothing paid and a due date passed → OVERDUE, labelled by payment type", () => {
+    const s = derivePaymentState([{ amount: 2100, dueDate: "2026-09-25", paidDate: null, type: "DEPOSIT" }], 4200, TODAY);
+    expect(s.status).toBe("OVERDUE");
+    expect(s.overdueLabel).toBe("Deposit");
   });
   it("due today is not overdue", () => {
     expect(derivePaymentState([{ amount: 2100, dueDate: TODAY, paidDate: null }], 4200, TODAY).status).toBe("PENDING");
