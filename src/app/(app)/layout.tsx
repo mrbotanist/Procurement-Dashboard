@@ -4,11 +4,17 @@ import { NAV, type NavGroup } from "@/components/shell/nav";
 import { requireUser } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
 import { ROLE_LABEL } from "@/lib/status";
+import { todayIso } from "@/lib/dates";
+import { inventoryRows } from "@/server/queries/insights";
 import { getShellData } from "@/server/queries/shell";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const user = await requireUser();
-  const [{ unresolved, notifications }, jar] = await Promise.all([getShellData(user.id), cookies()]);
+  const [{ unresolved, notifications }, jar, stock] = await Promise.all([
+    getShellData(user.id),
+    cookies(),
+    can(user.role, "view:inventory") ? inventoryRows(todayIso()) : Promise.resolve([]),
+  ]);
 
   // Only show what this role may open.
   const nav: NavGroup[] = NAV.flatMap((g) => {
@@ -20,8 +26,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <AppShell
       nav={nav}
-      // Reorder alerts are counted once the inventory screen exists (build step 6).
-      counts={{ notifications: unresolved, reorder: 0 }}
+      counts={{ notifications: unresolved, reorder: stock.filter((r) => r.level === "risk").length }}
       user={{ name: user.name, roleLabel: ROLE_LABEL[user.role] }}
       initialCollapsed={jar.get("sidebar")?.value === "collapsed"}
       notifications={notifications}
