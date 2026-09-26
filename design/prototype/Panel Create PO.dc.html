@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-6e82d67d-20a2-45e3-801e-d6f3e66cc691/styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>:root{--color-bg:#f4f5f7;--color-surface:#f0f2f4;--color-text:#17181b;--color-divider:#e3e5e8;--color-accent:oklch(0.6 0.2 25);--color-neutral-100:#f7f8f9;--color-neutral-200:#eef0f2;--color-neutral-300:#e3e5e8;--color-neutral-400:#cdd0d5;--color-neutral-500:#a3a7ae;--color-neutral-600:#80848b;--color-neutral-700:#62666d;--color-neutral-800:#45484e;--color-neutral-900:#2b2d31;--font-heading:"Hanken Grotesk",system-ui,sans-serif;--font-body:"Hanken Grotesk",system-ui,sans-serif;--font-heading-weight:600;--radius-sm:6px;--radius-md:10px;--radius-lg:16px}
+body{font-family:var(--font-body)}h1,h2,h3{letter-spacing:-.02em}
+.btn{white-space:nowrap;flex:none;font-weight:600;border-radius:10px}.btn-primary{background:#17181b;color:#fff}.btn-primary:hover{background:#2e3035}.btn-primary:active{background:#000}.btn-secondary{background:#fff;border-color:#dcdfe3}.btn-secondary:hover{background:#f4f5f7}.btn-ghost{color:#17181b}.btn-ghost:hover{background:#eef0f2}.input{background:#fff;border-color:#dcdfe3;border-radius:10px}.input:focus-visible{border-color:oklch(0.6 0.15 255)}.seg{border-radius:10px;border-color:#dcdfe3;background:#fff;overflow:hidden}.dialog{background:#fff;border-radius:16px}:focus-visible{outline-color:oklch(0.6 0.15 255)}</style>
+</helmet>
+<div data-screen-label="05 Create Purchase Order" style="max-width:1180px;margin:0 auto;padding:var(--space-6) var(--space-6) 64px;display:flex;flex-direction:column;gap:var(--space-6)">
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-4);padding-bottom:var(--space-3);border-bottom:0">
+    <div>
+      <h1 style="margin:0 0 4px;font-size:28px">Create Purchase Order</h1>
+      <p style="margin:0;font-size:15px;color:var(--color-neutral-700)">{{ subtitle }}</p>
+    </div>
+    <button onClick="{{ cancel }}" class="btn btn-secondary">Cancel</button>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-bottom:1px solid var(--color-divider)">
+    <sc-for list="{{ steps }}" as="s" hint-placeholder-count="5">
+      <button onClick="{{ s.go }}" style="all:unset;cursor:pointer;display:flex;flex-direction:column;gap:4px;padding:10px 12px 12px 0;border-top:4px solid {{ s.bar }}">
+        <span style="font-size:12.5px;color:var(--color-neutral-700)">Step {{ s.n }}</span>
+        <span style="font-size:15px;font-weight:{{ s.weight }};color:{{ s.fg }}">{{ s.label }}</span>
+      </button>
+    </sc-for>
+  </div>
+
+  <sc-if value="{{ st1 }}" hint-placeholder-val="{{ true }}">
+    <section style="background:#fff;border:1px solid var(--color-divider);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(20,22,28,.04);display:flex;flex-direction:column;gap:var(--space-4)">
+      <h2 style="margin:0;font-size:17px">Select supplier</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:var(--space-3)">
+        <sc-for list="{{ suppliers }}" as="s" hint-placeholder-count="12">
+          <button onClick="{{ s.pick }}" style="all:unset;cursor:pointer;display:flex;flex-direction:column;gap:4px;padding:14px;background:var(--color-surface);outline:{{ s.outline }};outline-offset:-2px" style-hover="background:var(--color-neutral-300)">
+            <span style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:17px;font-weight:600">{{ s.name }}</span><span style="width:14px;height:14px;border:2px solid var(--color-text);background:{{ s.dot }}"></span></span>
+            <span style="font-size:13px;color:var(--color-neutral-800)">{{ s.country }} · {{ s.lead }} day lead time · {{ s.onTime }} on time</span>
+            <span style="font-size:12px;color:var(--color-neutral-700)">{{ s.terms }}</span>
+          </button>
+        </sc-for>
+      </div>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{ st2 }}" hint-placeholder-val="{{ false }}">
+    <section style="background:#fff;border:1px solid var(--color-divider);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(20,22,28,.04);display:flex;flex-direction:column;gap:var(--space-3)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2 style="margin:0;font-size:17px">Products from {{ supplierName }}</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <sc-for list="{{ catalog }}" as="c" hint-placeholder-count="2">
+            <button onClick="{{ c.add }}" class="btn btn-secondary" style="font-size:13px">+ {{ c.name }}</button>
+          </sc-for>
+          <button onClick="{{ addBlank }}" class="btn btn-ghost">+ Custom line</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto"><div style="min-width:900px">
+        <div style="display:grid;grid-template-columns:150px minmax(180px,1fr) 80px 90px 80px 70px 100px 32px;gap:10px;padding:8px 0;border-bottom:1px solid var(--color-divider);font-size:12.5px;color:var(--color-neutral-700)">
+          <span>SKU</span><span>Product</span><span>Qty</span><span>Unit price</span><span>Discount %</span><span>Tax %</span><span style="text-align:right">Total</span><span></span>
+        </div>
+        <sc-for list="{{ lines }}" as="l" hint-placeholder-count="2">
+          <div style="display:grid;grid-template-columns:150px minmax(180px,1fr) 80px 90px 80px 70px 100px 32px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--color-neutral-200)">
+            <input class="input" value="{{ l.sku }}" onChange="{{ l.onSku }}"></input>
+            <input class="input" value="{{ l.name }}" onChange="{{ l.onName }}"></input>
+            <input class="input" value="{{ l.qty }}" onChange="{{ l.onQty }}" style="text-align:right"></input>
+            <input class="input" value="{{ l.price }}" onChange="{{ l.onPrice }}" style="text-align:right"></input>
+            <input class="input" value="{{ l.disc }}" onChange="{{ l.onDisc }}" style="text-align:right"></input>
+            <input class="input" value="{{ l.tax }}" onChange="{{ l.onTax }}" style="text-align:right"></input>
+            <span style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums">{{ l.total }}</span>
+            <button onClick="{{ l.remove }}" title="Remove line" class="btn btn-icon" style="width:32px;height:32px">×</button>
+          </div>
+        </sc-for>
+        <sc-if value="{{ noLines }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:24px 0;font-size:14px;color:var(--color-neutral-700);border-bottom:1px solid var(--color-neutral-200)">No products yet. Add from the supplier catalog above.</div>
+        </sc-if>
+        <div style="display:flex;justify-content:flex-end;gap:var(--space-6);padding:12px 0;font-size:15px">
+          <span><span style="color:var(--color-neutral-700)">Units</span> <b>{{ units }}</b></span>
+          <span><span style="color:var(--color-neutral-700)">PO total</span> <b style="font-size:20px">{{ grand }}</b></span>
+        </div>
+      </div></div>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{ st3 }}" hint-placeholder-val="{{ false }}">
+    <section style="background:#fff;border:1px solid var(--color-divider);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(20,22,28,.04);display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--space-4)">
+      <div class="field"><label>Currency</label><select class="input"><option>USD</option></select></div>
+      <div class="field"><label>Payment terms</label><select class="input" value="{{ terms }}" onChange="{{ onTerms }}"><sc-for list="{{ termOptions }}" as="o" hint-placeholder-count="4"><option value="{{ o }}">{{ o }}</option></sc-for></select></div>
+      <div class="field"><label>Incoterms</label><select class="input" value="{{ incoterm }}" onChange="{{ onIncoterm }}"><option>EXW</option><option>FCA</option><option>FOB</option><option>CIP</option><option>DAP</option><option>DDP</option></select></div>
+      <div class="field"><label>Expected production date</label><input class="input" type="date" value="{{ prodDate }}" onChange="{{ onProd }}"></input></div>
+      <div class="field"><label>Expected shipping date</label><input class="input" type="date" value="{{ shipDate }}" onChange="{{ onShip }}"></input></div>
+      <div class="field"><label>Preferred carrier</label><select class="input"><option>DHL Express</option><option>FedEx</option><option>Aramex</option><option>Emirates SkyCargo</option></select></div>
+      <div class="field" style="grid-column:1/-1"><label>Notes to supplier</label><textarea class="input" placeholder="Packaging, labelling or firmware requirements"></textarea></div>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{ st4 }}" hint-placeholder-val="{{ false }}">
+    <section style="background:#fff;border:1px solid var(--color-divider);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(20,22,28,.04);display:flex;flex-direction:column;gap:var(--space-3)">
+      <h2 style="margin:0;font-size:17px">Quotation and proforma invoice</h2>
+      <button onClick="{{ addDoc }}" style="all:unset;cursor:pointer;padding:32px 20px;border:2px dashed var(--color-divider);display:flex;flex-direction:column;gap:4px" style-hover="border-color:var(--color-accent)">
+        <span style="font-size:17px;font-weight:600">Drop files here or browse</span>
+        <span style="font-size:13px;color:var(--color-neutral-700)">PDF, XLSX or images up to 20 MB. Click to add a sample file.</span>
+      </button>
+      <sc-for list="{{ docs }}" as="doc" hint-placeholder-count="1">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--color-neutral-200);font-size:14px">
+          <span style="font-size:10px;font-weight:600;padding:2px 6px;border-radius:5px;background:var(--color-text);color:var(--color-bg)">PDF</span>
+          <span style="flex:1"><b>{{ doc.type }}</b> · {{ doc.file }}</span>
+          <button onClick="{{ doc.remove }}" class="btn btn-ghost" style="font-size:12px">Remove</button>
+        </div>
+      </sc-for>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{ st5 }}" hint-placeholder-val="{{ false }}">
+    <section style="background:#fff;border:1px solid var(--color-divider);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(20,22,28,.04);display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:var(--space-8)">
+      <div style="display:flex;flex-direction:column">
+        <h2 style="margin:0 0 8px;font-size:17px;padding-bottom:8px;border-bottom:0">Summary</h2>
+        <sc-for list="{{ review }}" as="r" hint-placeholder-count="8">
+          <div style="display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid var(--color-neutral-200);font-size:14px"><span style="color:var(--color-neutral-700)">{{ r.k }}</span><b style="text-align:right">{{ r.v }}</b></div>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-direction:column">
+        <h2 style="margin:0 0 8px;font-size:17px;padding-bottom:8px;border-bottom:0">Lines</h2>
+        <sc-for list="{{ lines }}" as="l" hint-placeholder-count="2">
+          <div style="display:grid;grid-template-columns:1fr auto;gap:2px 16px;padding:8px 0;border-bottom:1px solid var(--color-neutral-200);font-size:14px">
+            <b>{{ l.name }}</b><b style="text-align:right">{{ l.total }}</b>
+            <span style="font-size:12px;color:var(--color-neutral-700)">{{ l.sku }} · {{ l.qty }} × ${{ l.price }}</span>
+          </div>
+        </sc-for>
+        <div style="display:flex;justify-content:space-between;padding:12px 0;font-size:20px;font-weight:600"><span>Total</span><span>{{ grand }}</span></div>
+        <sc-if value="{{ budgetWarn }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:10px 12px;background:oklch(0.96 0.03 25);border-radius:10px;color:var(--color-accent-800);font-size:14px">{{ budgetMsg }}</div>
+        </sc-if>
+        <sc-if value="{{ budgetOk }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:10px 12px;background:var(--color-surface);font-size:14px">{{ budgetMsg }}</div>
+        </sc-if>
+      </div>
+    </section>
+  </sc-if>
+
+  <div style="display:flex;justify-content:space-between;gap:8px;padding-top:var(--space-4);border-top:1px solid var(--color-divider)">
+    <button onClick="{{ prev }}" class="btn btn-secondary" disabled="{{ atStart }}">← Back</button>
+    <div style="display:flex;gap:8px">
+      <sc-if value="{{ st5 }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ saveDraft }}" class="btn btn-secondary">Save as draft</button>
+      </sc-if>
+      <button onClick="{{ next }}" class="btn btn-primary" disabled="{{ nextDisabled }}" style="min-width:180px;justify-content:space-between">{{ nextLabel }}<span>→</span></button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const STEP_LABELS = ['Supplier', 'Products', 'Commercial Terms', 'Documents', 'Review'];
+class Component extends DCLogic {
+  state = { step: 0, supplier: null, lines: [], terms: '', incoterm: 'EXW', prodDate: '2026-10-12', shipDate: '2026-10-15', docs: [] };
+  componentDidMount() {
+    import(new URL('fpv-data-v2.js', document.baseURI).href).then(m => { this.m = m; this.forceUpdate(); });
+  }
+  setLine(i, k, v) { this.setState(s => ({ lines: s.lines.map((l, j) => j === i ? { ...l, [k]: v } : l) })); }
+  lineTotal(l) { const n = x => parseFloat(x) || 0; return n(l.qty) * n(l.price) * (1 - n(l.disc) / 100) * (1 + n(l.tax) / 100); }
+  create(asDraft) {
+    const m = this.m, S = this.state, sup = m.SUPPLIERS.find(s => s.name === S.supplier);
+    const prefix = S.supplier.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase();
+    const id = prefix + '-' + (26102 + m.store.s.created.length);
+    const brand = (m.BASE_POS.find(p => p.supplier === S.supplier) || {}).brand || S.supplier;
+    const po = { id, supplier: S.supplier, brand, origin: (m.BASE_POS.find(p => p.supplier === S.supplier) || { origin: sup.country }).origin, date: m.TODAY, po: asDraft ? 'Draft' : 'Sent', pay: 'Pending', prod: 'Not Started', ship: 'Not Shipped', customs: 'Not Started', inv: 'Not Received', eta: S.shipDate ? m.iso(m.add(S.shipDate, 5)) : null, stage: asDraft ? 'Draft' : 'PO Sent', tl: 1, pct: 0, carrier: 'DHL Express', items: S.lines.map(l => [l.sku, l.name, parseFloat(l.qty) || 0, this.lineTotal(l) / (parseFloat(l.qty) || 1)]) };
+    m.store.set(s => ({ created: [po, ...s.created], notes: { ...s.notes, [id]: [{ date: 'Sep 26', who: 'Procurement Manager', text: asDraft ? 'Draft created.' : 'PO created and sent to ' + S.supplier + '.' }] } }));
+    m.store.openPo(id);
+  }
+  renderVals() {
+    const m = this.m;
+    if (!m) return {};
+    const S = this.state, step = S.step;
+    const sup = m.SUPPLIERS.find(s => s.name === S.supplier);
+    const catalog = S.supplier ? m.BASE_POS.filter(p => p.supplier === S.supplier).flatMap(p => p.items).map(([sku, name, qty, price]) => ({ name, add: () => this.setState(s => ({ lines: [...s.lines, { sku, name, qty: String(qty), price: String(price), disc: '0', tax: '0' }] })) })) : [];
+    const grandN = S.lines.reduce((a, l) => a + this.lineTotal(l), 0);
+    const units = S.lines.reduce((a, l) => a + (parseFloat(l.qty) || 0), 0);
+    const brand = S.supplier ? ((m.BASE_POS.find(p => p.supplier === S.supplier) || {}).brand || S.supplier) : '';
+    const bud = m.BUDGETS.find(b => b[0] === brand);
+    const avail = bud ? (bud[1] - bud[2] - bud[3]) * 1000 : null;
+    const valid = [!!S.supplier, S.lines.length > 0 && grandN > 0, true, true, true];
+    return {
+      subtitle: sup ? sup.name + ' · ' + S.lines.length + ' lines · ' + m.usdR(grandN) : 'Five steps. Nothing is sent until you confirm on Review.',
+      steps: STEP_LABELS.map((label, i) => ({ n: i + 1, label, go: () => { if (i <= step || valid.slice(0, i).every(Boolean)) this.setState({ step: i }); }, bar: i < step ? 'var(--color-text)' : i === step ? 'var(--color-accent)' : 'var(--color-neutral-300)', fg: i <= step ? 'var(--color-text)' : 'var(--color-neutral-600)', weight: i === step ? 800 : 400 })),
+      st1: step === 0, st2: step === 1, st3: step === 2, st4: step === 3, st5: step === 4,
+      suppliers: m.SUPPLIERS.map(s => ({ name: s.name, country: s.country, lead: s.lead, onTime: s.onTime + '%', terms: s.terms, outline: S.supplier === s.name ? '2px solid var(--color-accent)' : 'none', dot: S.supplier === s.name ? 'var(--color-accent)' : 'transparent', pick: () => this.setState(st => ({ supplier: s.name, terms: s.terms, lines: st.supplier === s.name ? st.lines : [] })) })),
+      supplierName: S.supplier || '', catalog,
+      addBlank: () => this.setState(s => ({ lines: [...s.lines, { sku: '', name: '', qty: '1', price: '0', disc: '0', tax: '0' }] })),
+      lines: S.lines.map((l, i) => ({ ...l, total: m.usd(Math.round(this.lineTotal(l) * 100) / 100), onSku: e => this.setLine(i, 'sku', e.target.value), onName: e => this.setLine(i, 'name', e.target.value), onQty: e => this.setLine(i, 'qty', e.target.value), onPrice: e => this.setLine(i, 'price', e.target.value), onDisc: e => this.setLine(i, 'disc', e.target.value), onTax: e => this.setLine(i, 'tax', e.target.value), remove: () => this.setState(s => ({ lines: s.lines.filter((_, j) => j !== i) })) })),
+      noLines: S.lines.length === 0, units: units.toLocaleString(), grand: m.usd(Math.round(grandN * 100) / 100),
+      terms: S.terms, termOptions: Array.from(new Set([S.terms, '100% before shipment', '50% deposit, 50% before shipment', '30% deposit, 70% before shipment', 'Net 30'].filter(Boolean))),
+      onTerms: e => this.setState({ terms: e.target.value }), incoterm: S.incoterm, onIncoterm: e => this.setState({ incoterm: e.target.value }),
+      prodDate: S.prodDate, shipDate: S.shipDate, onProd: e => this.setState({ prodDate: e.target.value }), onShip: e => this.setState({ shipDate: e.target.value }),
+      docs: S.docs.map((d, i) => ({ ...d, remove: () => this.setState(s => ({ docs: s.docs.filter((_, j) => j !== i) })) })),
+      addDoc: () => this.setState(s => ({ docs: [...s.docs, s.docs.length ? { type: 'Proforma Invoice', file: 'PI-' + (S.supplier || 'supplier').toLowerCase() + '-draft.pdf' } : { type: 'Quotation', file: 'quotation-' + (S.supplier || 'supplier').toLowerCase() + '-sep26.pdf' }] })),
+      review: [['Supplier', S.supplier || '—'], ['Brand', brand || '—'], ['Currency', 'USD'], ['Payment terms', S.terms || '—'], ['Incoterms', S.incoterm], ['Expected production', S.prodDate ? m.fmt(m.dt(S.prodDate)) : '—'], ['Expected shipping', S.shipDate ? m.fmt(m.dt(S.shipDate)) : '—'], ['Documents', S.docs.length ? S.docs.map(d => d.type).join(', ') : 'None attached'], ['Units', units.toLocaleString()]].map(([k, v]) => ({ k, v })),
+      budgetWarn: avail !== null && grandN > avail, budgetOk: avail !== null && grandN <= avail,
+      budgetMsg: avail === null ? '' : grandN > avail ? 'Exceeds the remaining ' + brand + ' budget of ' + m.usdR(avail) + ' by ' + m.usdR(grandN - avail) + '.' : 'Within the remaining ' + brand + ' budget of ' + m.usdR(avail) + '.',
+      atStart: step === 0, prev: () => this.setState({ step: Math.max(0, step - 1) }),
+      nextDisabled: !valid[step], nextLabel: step === 4 ? 'Create & send PO' : 'Continue',
+      next: () => step === 4 ? this.create(false) : this.setState({ step: step + 1 }),
+      saveDraft: () => this.create(true), cancel: () => m.store.go('pos')
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-6e82d67d-20a2-45e3-801e-d6f3e66cc691/styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>:root{--color-bg:#f4f5f7;--color-surface:#f0f2f4;--color-text:#17181b;--color-divider:#e3e5e8;--color-accent:oklch(0.6 0.2 25);--color-neutral-100:#f7f8f9;--color-neutral-200:#eef0f2;--color-neutral-300:#e3e5e8;--color-neutral-400:#cdd0d5;--color-neutral-500:#a3a7ae;--color-neutral-600:#80848b;--color-neutral-700:#62666d;--color-neutral-800:#45484e;--color-neutral-900:#2b2d31;--font-heading:"Hanken Grotesk",system-ui,sans-serif;--font-body:"Hanken Grotesk",system-ui,sans-serif;--font-heading-weight:600;--radius-sm:6px;--radius-md:10px;--radius-lg:16px}
+body{font-family:var(--font-body)}h1,h2,h3{letter-spacing:-.02em}
+.btn{white-space:nowrap;flex:none;font-weight:600;border-radius:10px}.btn-primary{background:#17181b;color:#fff}.btn-primary:hover{background:#2e3035}.btn-primary:active{background:#000}.btn-secondary{background:#fff;border-color:#dcdfe3}.btn-secondary:hover{background:#f4f5f7}.btn-ghost{color:#17181b}.btn-ghost:hover{background:#eef0f2}.input{background:#fff;border-color:#dcdfe3;border-radius:10px}.input:focus-visible{border-color:oklch(0.6 0.15 255)}.seg{border-radius:10px;border-color:#dcdfe3;background:#fff;overflow:hidden}.dialog{background:#fff;border-radius:16px}:focus-visible{outline-color:oklch(0.6 0.15 255)}</style>
+</helmet>
+<div data-screen-label="14 Action Center" style="max-width:1180px;margin:0 auto;padding:var(--space-6) var(--space-6) 64px;display:flex;flex-direction:column;gap:var(--space-4)">
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-4);flex-wrap:wrap;padding-bottom:var(--space-3);border-bottom:0">
+    <div>
+      <h1 style="margin:0 0 4px;font-size:28px">Action Center</h1>
+      <p style="margin:0;font-size:15px;color:var(--color-neutral-700)">Notifications and pending actions. Resolve an item once it has been handled.</p>
+    </div>
+    <button onClick="{{ resolveAll }}" class="btn btn-secondary">Resolve all info items</button>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;border:1px solid var(--color-divider);align-self:flex-start;border-radius:10px;overflow:hidden;background:#fff">
+    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+      <button onClick="{{ t.go }}" style="all:unset;cursor:pointer;padding:8px 14px;font-size:13px;display:flex;gap:8px;align-items:center;border-right:1px solid var(--color-divider);background:{{ t.bg }};color:{{ t.fg }}"><span style="width:8px;height:8px;border-radius:50%;background:{{ t.dot }}"></span>{{ t.k }}<b>{{ t.n }}</b></button>
+    </sc-for>
+  </div>
+  <div style="display:flex;flex-direction:column">
+    <sc-for list="{{ items }}" as="n" hint-placeholder-count="8">
+      <div style="display:grid;grid-template-columns:6px minmax(0,1fr) auto;gap:var(--space-4);padding:14px 0;border-bottom:1px solid var(--color-neutral-200);opacity:{{ n.op }}">
+        <span style="background:{{ n.color }}"></span>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <span style="font-size:12.5px;color:var(--color-neutral-700)">{{ n.kind }} · {{ n.time }}</span>
+          <span style="font-size:17px;font-weight:600">{{ n.text }}</span>
+          <span style="font-size:14px;color:var(--color-neutral-800)">{{ n.detail }}</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button onClick="{{ n.open }}" class="btn btn-secondary">Open {{ n.po }}</button>
+          <button onClick="{{ n.toggle }}" class="btn btn-ghost">{{ n.toggleLabel }}</button>
+        </div>
+      </div>
+    </sc-for>
+    <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}"><div style="padding:40px 0;font-size:15px;color:var(--color-neutral-700)">Nothing here.</div></sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { tab: 'open' };
+  componentDidMount() {
+    import(new URL('fpv-data-v2.js', document.baseURI).href).then(m => { this.m = m; this.un = m.store.sub(() => this.forceUpdate()); this.forceUpdate(); });
+  }
+  componentWillUnmount() { this.un && this.un(); }
+  renderVals() {
+    const m = this.m;
+    if (!m) return {};
+    const st = m.store, R = st.s.resolved, tab = this.state.tab;
+    const open = m.NOTIFS.filter(n => !R[n.id]);
+    const TABS = [['open', 'All open', null, n => !R[n.id]], ['red', 'Critical', 'red', n => !R[n.id] && n.tone === 'red'], ['orange', 'Needs attention', 'orange', n => !R[n.id] && n.tone === 'orange'], ['blue', 'Updates', 'blue', n => !R[n.id] && n.tone === 'blue'], ['done', 'Resolved', 'gray', n => !!R[n.id]]];
+    const cur = TABS.find(t => t[0] === tab);
+    const items = m.NOTIFS.filter(cur[3]).map(n => ({ ...n, color: m.T[n.tone].dot, op: R[n.id] ? 0.55 : 1, open: () => st.openPo(n.po), toggleLabel: R[n.id] ? 'Reopen' : 'Resolve', toggle: () => st.set(s => ({ resolved: { ...s.resolved, [n.id]: !s.resolved[n.id] } })) }));
+    return {
+      tabs: TABS.map(([k, label, tone, f]) => ({ k: label, n: m.NOTIFS.filter(f).length, dot: tone ? m.T[tone].dot : 'var(--color-text)', go: () => this.setState({ tab: k }), bg: tab === k ? 'var(--color-text)' : 'transparent', fg: tab === k ? 'var(--color-bg)' : 'var(--color-text)' })),
+      items, empty: items.length === 0,
+      resolveAll: () => st.set(s => { const r = { ...s.resolved }; m.NOTIFS.filter(n => n.tone === 'blue').forEach(n => r[n.id] = true); return { resolved: r }; })
+    };
+  }
+}
+</script>
+</body>
+</html>

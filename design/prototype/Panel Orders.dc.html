@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-6e82d67d-20a2-45e3-801e-d6f3e66cc691/styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>:root{--color-bg:#f4f5f7;--color-surface:#f0f2f4;--color-text:#17181b;--color-divider:#e3e5e8;--color-accent:oklch(0.6 0.2 25);--color-neutral-100:#f7f8f9;--color-neutral-200:#eef0f2;--color-neutral-300:#e3e5e8;--color-neutral-400:#cdd0d5;--color-neutral-500:#a3a7ae;--color-neutral-600:#80848b;--color-neutral-700:#62666d;--color-neutral-800:#45484e;--color-neutral-900:#2b2d31;--font-heading:"Hanken Grotesk",system-ui,sans-serif;--font-body:"Hanken Grotesk",system-ui,sans-serif;--font-heading-weight:600;--radius-sm:6px;--radius-md:10px;--radius-lg:16px}
+body{font-family:var(--font-body)}h1,h2,h3{letter-spacing:-.02em}
+.btn{white-space:nowrap;flex:none;font-weight:600;border-radius:10px}.btn-primary{background:#17181b;color:#fff}.btn-primary:hover{background:#2e3035}.btn-primary:active{background:#000}.btn-secondary{background:#fff;border-color:#dcdfe3}.btn-secondary:hover{background:#f4f5f7}.btn-ghost{color:#17181b}.btn-ghost:hover{background:#eef0f2}.input{background:#fff;border-color:#dcdfe3;border-radius:10px}.input:focus-visible{border-color:oklch(0.6 0.15 255)}.seg{border-radius:10px;border-color:#dcdfe3;background:#fff;overflow:hidden}.dialog{background:#fff;border-radius:16px}:focus-visible{outline-color:oklch(0.6 0.15 255)}</style>
+</helmet>
+<div data-screen-label="03 All Purchase Orders" style="max-width:1480px;margin:0 auto;padding:var(--space-6) var(--space-6) 64px;display:flex;flex-direction:column;gap:var(--space-4)">
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-4);flex-wrap:wrap;padding-bottom:var(--space-3);border-bottom:0">
+    <div>
+      <h1 style="margin:0 0 4px;font-size:28px">All Purchase Orders</h1>
+      <p style="margin:0;font-size:15px;color:var(--color-neutral-700)">{{ summary }}</p>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-secondary">Export CSV</button>
+      <button onClick="{{ goCreate }}" class="btn btn-primary">+ New PO</button>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:0;flex-wrap:wrap;border:1px solid var(--color-divider);align-self:flex-start;border-radius:10px;overflow:hidden;background:#fff">
+    <sc-for list="{{ quick }}" as="q" hint-placeholder-count="6">
+      <button onClick="{{ q.go }}" style="all:unset;cursor:pointer;padding:8px 14px;font-size:13px;display:flex;gap:8px;align-items:center;border-right:1px solid var(--color-divider);background:{{ q.bg }};color:{{ q.fg }}">{{ q.label }}<span style="font-weight:600;font-variant-numeric:tabular-nums">{{ q.n }}</span></button>
+    </sc-for>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--space-3);align-items:end">
+    <sc-for list="{{ facets }}" as="f" hint-placeholder-count="6">
+      <div class="field">
+        <label>{{ f.label }}</label>
+        <select class="input" value="{{ f.value }}" onChange="{{ f.onChange }}">
+          <sc-for list="{{ f.options }}" as="o" hint-placeholder-count="3"><option value="{{ o }}">{{ o }}</option></sc-for>
+        </select>
+      </div>
+    </sc-for>
+  </div>
+
+  <sc-if value="{{ hasChips }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <sc-for list="{{ chips }}" as="c" hint-placeholder-count="1">
+        <span style="display:inline-flex;align-items:center;gap:8px;padding:4px 4px 4px 10px;background:var(--color-text);color:var(--color-bg);font-size:13px">{{ c.label }}<button onClick="{{ c.clear }}" style="all:unset;cursor:pointer;width:20px;height:20px;display:flex;align-items:center;justify-content:center" style-hover="background:var(--color-accent)">×</button></span>
+      </sc-for>
+      <button onClick="{{ clearAll }}" class="btn btn-ghost">Clear all</button>
+    </div>
+  </sc-if>
+
+  <div style="overflow-x:auto;background:#fff;border:1px solid var(--color-divider);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(20,22,28,.04);padding:6px 20px 8px">
+    <div style="min-width:1260px">
+      <div style="display:grid;grid-template-columns:92px minmax(140px,1.3fr) 64px 92px 90px 124px 120px 116px 140px 60px 180px;gap:12px;padding:10px 0;border-bottom:1px solid var(--color-divider);font-size:12.5px;color:var(--color-neutral-700)">
+        <span>PO Number</span><span>Supplier / Brand</span><span>Ordered</span><span style="text-align:right">Total Value</span><span>PO Status</span><span>Payment</span><span>Production</span><span>Shipment</span><span>Customs</span><span>ETA</span><span>Health</span>
+      </div>
+      <sc-for list="{{ rows }}" as="r" hint-placeholder-count="10">
+        <div onClick="{{ r.open }}" style="cursor:pointer;display:grid;grid-template-columns:92px minmax(140px,1.3fr) 64px 92px 90px 124px 120px 116px 140px 60px 180px;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--color-neutral-200);font-size:14px" style-hover="background:var(--color-surface)">
+          <span style="font-weight:600;font-variant-numeric:tabular-nums">{{ r.id }}</span>
+          <span style="display:flex;flex-direction:column;line-height:1.25"><span>{{ r.supplier }}</span><span style="font-size:12px;color:var(--color-neutral-700)">{{ r.brandLine }}</span></span>
+          <span style="font-variant-numeric:tabular-nums;color:var(--color-neutral-800)">{{ r.dateShort }}</span>
+          <span style="text-align:right;font-variant-numeric:tabular-nums">{{ r.value }}</span>
+          <span><span style="display:inline-flex;padding:2px 8px;font-size:12px;border:1px solid var(--color-divider);white-space:nowrap">{{ r.po.label }}</span></span>
+          <span><span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:99px;font-size:12px;white-space:nowrap;background:{{ r.pay.bg }};color:{{ r.pay.fg }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ r.pay.dot }}"></span>{{ r.pay.label }}</span></span>
+          <span><span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:99px;font-size:12px;white-space:nowrap;background:{{ r.prod.bg }};color:{{ r.prod.fg }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ r.prod.dot }}"></span>{{ r.prod.label }}</span></span>
+          <span><span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:99px;font-size:12px;white-space:nowrap;background:{{ r.ship.bg }};color:{{ r.ship.fg }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ r.ship.dot }}"></span>{{ r.ship.label }}</span></span>
+          <span><span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:99px;font-size:12px;white-space:nowrap;background:{{ r.customs.bg }};color:{{ r.customs.fg }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ r.customs.dot }}"></span>{{ r.customs.label }}</span></span>
+          <span style="font-variant-numeric:tabular-nums">{{ r.eta }}</span>
+          <span style="display:flex;flex-direction:column;line-height:1.25"><span style="display:inline-flex;align-items:center;gap:7px;font-weight:600"><span style="width:9px;height:9px;border-radius:50%;background:{{ r.health.dot }}"></span>{{ r.health.label }}</span><span style="font-size:12px;color:var(--color-neutral-700)">{{ r.reason }}</span></span>
+        </div>
+      </sc-for>
+      <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:48px 0;font-size:15px;color:var(--color-neutral-700)">No orders match these filters.</div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const ALL = 'All';
+class Component extends DCLogic {
+  state = { supplier: ALL, brand: ALL, pay: ALL, ship: ALL, currency: 'USD', date: 'Any time' };
+  componentDidMount() {
+    import(new URL('fpv-data-v2.js', document.baseURI).href).then(m => { this.m = m; this.un = m.store.sub(() => this.forceUpdate()); this.forceUpdate(); });
+  }
+  componentWillUnmount() { this.un && this.un(); }
+  renderVals() {
+    const m = this.m;
+    if (!m) return {};
+    const st = m.store, S = st.s, f = S.filter, q = (S.query || '').trim().toLowerCase(), L = this.state;
+    const all = m.sortedPos();
+    const uniq = k => [ALL, ...Array.from(new Set(all.map(p => p[k])))];
+    const facetDefs = [
+      ['Supplier', 'supplier', uniq('supplier')], ['Brand', 'brand', uniq('brand')],
+      ['Payment status', 'pay', [ALL, 'Pending', 'Partially Paid', 'Paid', 'Overdue']],
+      ['Shipment status', 'ship', [ALL, 'Not Shipped', 'Ready to Ship', 'Shipped', 'In Transit', 'Delivered']],
+      ['Order date', 'date', ['Any time', 'Last 30 days', 'September', 'August']], ['Currency', 'currency', ['USD']]
+    ];
+    const facets = facetDefs.map(([label, key, options]) => ({ label, value: L[key], options, onChange: e => this.setState({ [key]: e.target.value }) }));
+    const dateOk = p => L.date === 'Any time' || (L.date === 'Last 30 days' ? m.days(p.date, m.TODAY) <= 30 : L.date === 'September' ? p.date.slice(5, 7) === '09' : p.date.slice(5, 7) === '08');
+    const text = p => !q || [p.id, p.supplier, p.brand, p.carrier, p.tracking || '', 'PI-' + p.id, 'CI-' + p.id, ...p.items.flatMap(i => [i[0], i[1]])].join(' ').toLowerCase().includes(q);
+    const facetOk = p => ['supplier', 'brand', 'pay', 'ship'].every(k => L[k] === ALL || p[k] === L[k]) && dateOk(p);
+    const list = all.filter(p => m.matches(p, f) && text(p) && facetOk(p));
+    const QUICK = [[null, 'All orders'], [{ type: 'attention', label: 'Needs attention' }], [{ type: 'health', value: 'Delayed', label: 'Delayed' }], [{ type: 'pay', label: 'Payment pending' }], [{ type: 'unconfirmed', label: 'Unconfirmed' }], [{ type: 'transit', label: 'In transit' }]];
+    const quick = QUICK.map(([qf, l]) => {
+      const on = qf ? !!f && f.type === qf.type && f.value === qf.value : !f;
+      return { label: l || qf.label, n: all.filter(p => m.matches(p, qf)).length, go: () => st.set({ filter: qf }), bg: on ? 'var(--color-text)' : 'transparent', fg: on ? 'var(--color-bg)' : 'var(--color-text)' };
+    });
+    const chips = [];
+    if (f && (f.type === 'stage' || f.type === 'prod' || f.type === 'supplier' || f.type === 'customs')) chips.push({ label: (f.type === 'stage' ? 'Stage: ' : '') + (f.label || f.value), clear: () => st.set({ filter: null }) });
+    if (q) chips.push({ label: 'Search: “' + S.query + '”', clear: () => st.set({ query: '' }) });
+    ['supplier', 'brand', 'pay', 'ship'].forEach(k => { if (L[k] !== ALL) chips.push({ label: L[k], clear: () => this.setState({ [k]: ALL }) }); });
+    if (L.date !== 'Any time') chips.push({ label: L.date, clear: () => this.setState({ date: 'Any time' }) });
+    return {
+      summary: '24 open orders · ' + list.length + ' of ' + all.length + ' shown in this sample',
+      quick, facets, chips, hasChips: chips.length > 0,
+      clearAll: () => { st.set({ filter: null, query: '' }); this.setState({ supplier: ALL, brand: ALL, pay: ALL, ship: ALL, date: 'Any time' }); },
+      rows: list.map(m.row), empty: list.length === 0, goCreate: () => st.go('create')
+    };
+  }
+}
+</script>
+</body>
+</html>

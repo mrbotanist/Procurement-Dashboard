@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-6e82d67d-20a2-45e3-801e-d6f3e66cc691/styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>:root{--color-bg:#f4f5f7;--color-surface:#f0f2f4;--color-text:#17181b;--color-divider:#e3e5e8;--color-accent:oklch(0.6 0.2 25);--color-neutral-100:#f7f8f9;--color-neutral-200:#eef0f2;--color-neutral-300:#e3e5e8;--color-neutral-400:#cdd0d5;--color-neutral-500:#a3a7ae;--color-neutral-600:#80848b;--color-neutral-700:#62666d;--color-neutral-800:#45484e;--color-neutral-900:#2b2d31;--font-heading:"Hanken Grotesk",system-ui,sans-serif;--font-body:"Hanken Grotesk",system-ui,sans-serif;--font-heading-weight:600;--radius-sm:6px;--radius-md:10px;--radius-lg:16px}
+body{font-family:var(--font-body)}h1,h2,h3{letter-spacing:-.02em}
+.btn{white-space:nowrap;flex:none;font-weight:600;border-radius:10px}.btn-primary{background:#17181b;color:#fff}.btn-primary:hover{background:#2e3035}.btn-primary:active{background:#000}.btn-secondary{background:#fff;border-color:#dcdfe3}.btn-secondary:hover{background:#f4f5f7}.btn-ghost{color:#17181b}.btn-ghost:hover{background:#eef0f2}.input{background:#fff;border-color:#dcdfe3;border-radius:10px}.input:focus-visible{border-color:oklch(0.6 0.15 255)}.seg{border-radius:10px;border-color:#dcdfe3;background:#fff;overflow:hidden}.dialog{background:#fff;border-radius:16px}:focus-visible{outline-color:oklch(0.6 0.15 255)}</style>
+</helmet>
+<div data-screen-label="07 Supplier Detail" style="max-width:1480px;margin:0 auto;padding:var(--space-4) var(--space-6) 64px;display:flex;flex-direction:column;gap:var(--space-6)">
+  <button onClick="{{ back }}" class="btn btn-ghost" style="align-self:flex-start">← All suppliers</button>
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-4);flex-wrap:wrap;padding-bottom:var(--space-3);border-bottom:0">
+    <div>
+      <h1 style="margin:0 0 4px;font-size:34px">{{ s.name }}</h1>
+      <p style="margin:0;font-size:15px;color:var(--color-neutral-700)">{{ s.country }} · Supplier since 2023 · {{ s.terms }}</p>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-secondary">Email {{ s.contact }}</button>
+      <button onClick="{{ newPo }}" class="btn btn-primary">+ New PO</button>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));border-bottom:1px solid var(--color-divider)">
+    <sc-for list="{{ stats }}" as="x" hint-placeholder-count="5">
+      <div style="display:flex;flex-direction:column;gap:4px;padding:0 var(--space-4) var(--space-4) 0;margin-bottom:0">
+        <span style="font-size:12.5px;color:var(--color-neutral-700)">{{ x.k }}</span>
+        <span style="font-size:32px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums">{{ x.v }}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:var(--space-8);align-items:flex-start">
+    <div style="flex:1 1 640px;min-width:0;display:flex;flex-direction:column;gap:var(--space-8)">
+      <section style="background:#fff;border:1px solid var(--color-divider);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(20,22,28,.04);display:flex;flex-direction:column;gap:var(--space-3)">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:var(--space-2);border-bottom:0">
+          <h2 style="margin:0;font-size:17px">Purchase History</h2>
+          <span style="font-size:13px;color:var(--color-neutral-700)">Monthly, 2026 · USD</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(9,1fr);gap:8px;align-items:end;height:160px;border-bottom:1px solid var(--color-divider)">
+          <sc-for list="{{ history }}" as="h" hint-placeholder-count="9">
+            <div style="height:100%;display:flex;flex-direction:column;justify-content:flex-end;gap:4px"><span style="font-size:11px;color:var(--color-neutral-700)">{{ h.v }}</span><div style="height:{{ h.h }};background:var(--color-text)"></div></div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(9,1fr);gap:8px;margin-top:-6px">
+          <sc-for list="{{ history }}" as="h" hint-placeholder-count="9"><span style="font-size:11px;color:var(--color-neutral-700)">{{ h.m }}</span></sc-for>
+        </div>
+        <div style="display:flex;gap:var(--space-6);font-size:14px"><span><span style="color:var(--color-neutral-700)">2025 total</span> <b>{{ lastYear }}</b></span><span><span style="color:var(--color-neutral-700)">2026 YTD</span> <b>{{ ytd }}</b></span></div>
+      </section>
+
+      <section style="background:#fff;border:1px solid var(--color-divider);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(20,22,28,.04);display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:var(--space-2);border-bottom:0">
+          <h2 style="margin:0;font-size:17px">Current Orders</h2>
+          <span style="font-size:13px;color:var(--color-neutral-700)">{{ orderCount }}</span>
+        </div>
+        <sc-for list="{{ rows }}" as="r" hint-placeholder-count="2">
+          <div onClick="{{ r.open }}" style="cursor:pointer;display:grid;grid-template-columns:96px 90px 1fr 1fr 1fr 150px;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--color-neutral-200);font-size:14px" style-hover="background:var(--color-surface)">
+            <b style="font-variant-numeric:tabular-nums">{{ r.id }}</b>
+            <span style="font-variant-numeric:tabular-nums">{{ r.value }}</span>
+            <span><span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:99px;font-size:12px;background:{{ r.pay.bg }};color:{{ r.pay.fg }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ r.pay.dot }}"></span>{{ r.pay.label }}</span></span>
+            <span><span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:99px;font-size:12px;background:{{ r.prod.bg }};color:{{ r.prod.fg }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ r.prod.dot }}"></span>{{ r.prod.label }}</span></span>
+            <span><span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:99px;font-size:12px;background:{{ r.ship.bg }};color:{{ r.ship.fg }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ r.ship.dot }}"></span>{{ r.ship.label }}</span></span>
+            <span style="display:inline-flex;align-items:center;gap:7px;font-weight:600"><span style="width:9px;height:9px;border-radius:50%;background:{{ r.health.dot }}"></span>{{ r.health.label }}</span>
+          </div>
+        </sc-for>
+        <sc-if value="{{ noOrders }}" hint-placeholder-val="{{ false }}"><div style="padding:20px 0;font-size:14px;color:var(--color-neutral-700)">No active orders.</div></sc-if>
+      </section>
+    </div>
+
+    <div style="flex:1 1 340px;min-width:0;display:flex;flex-direction:column;gap:var(--space-8)">
+      <section style="background:#fff;border:1px solid var(--color-divider);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(20,22,28,.04);display:flex;flex-direction:column">
+        <h2 style="margin:0;font-size:17px;padding-bottom:var(--space-2);border-bottom:0">Supplier Information</h2>
+        <sc-for list="{{ info }}" as="i" hint-placeholder-count="9">
+          <div style="display:grid;grid-template-columns:130px 1fr;gap:12px;padding:8px 0;border-bottom:1px solid var(--color-neutral-200);font-size:14px"><span style="color:var(--color-neutral-700)">{{ i.k }}</span><span style="font-weight:600">{{ i.v }}</span></div>
+        </sc-for>
+        <div style="font-size:14px;line-height:1.5;padding:12px 14px;border-radius:10px;background:var(--color-neutral-100);margin-top:var(--space-3)"><div style="font-size:12.5px;color:var(--color-neutral-700);margin-bottom:4px">Notes</div>{{ note }}</div>
+      </section>
+      <section style="background:#fff;border:1px solid var(--color-divider);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(20,22,28,.04);display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:var(--space-2);border-bottom:0"><h2 style="margin:0;font-size:17px">Documents</h2><button class="btn btn-ghost">Upload</button></div>
+        <sc-for list="{{ docs }}" as="d" hint-placeholder-count="4">
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--color-neutral-200);font-size:14px">
+            <span style="font-size:10px;font-weight:600;padding:2px 6px;border-radius:5px;background:var(--color-text);color:var(--color-bg);min-width:34px;text-align:center">{{ d.ext }}</span>
+            <span style="flex:1;display:flex;flex-direction:column;line-height:1.3"><b>{{ d.type }}</b><span style="font-size:12px;color:var(--color-neutral-700)">{{ d.file }}</span></span>
+            <span style="font-size:12px;color:var(--color-neutral-700)">{{ d.date }}</span>
+          </div>
+        </sc-for>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  componentDidMount() {
+    import(new URL('fpv-data-v2.js', document.baseURI).href).then(m => { this.m = m; this.un = m.store.sub(() => this.forceUpdate()); this.forceUpdate(); });
+  }
+  componentWillUnmount() { this.un && this.un(); }
+  renderVals() {
+    const m = this.m;
+    if (!m) return {};
+    const st = m.store, s = m.SUPPLIERS.find(x => x.name === st.s.supplierId) || m.SUPPLIERS[0];
+    const mine = m.sortedPos().filter(p => p.supplier === s.name);
+    const outstanding = mine.reduce((a, p) => a + (p.pay === 'Paid' ? 0 : p.pay === 'Pending' ? p.value : p.value / 2), 0);
+    const tr = m.trend(s.valueYTD), max = Math.max(...tr.map(t => t[1]));
+    const slug = s.name.toLowerCase().replace(/[^a-z]/g, '');
+    return {
+      s, back: () => st.go('suppliers'), newPo: () => st.go('create'),
+      stats: [['Open Orders', mine.length], ['Outstanding Payment', m.usdR(outstanding)], ['Orders YTD', s.orders], ['Purchase Value YTD', m.usdR(s.valueYTD)], ['Units Purchased', s.units.toLocaleString()]].map(([k, v]) => ({ k, v })),
+      history: tr.map(([mo, v]) => ({ m: mo, v: '$' + (v / 1000).toFixed(1) + 'K', h: Math.round(v / max * 82) + '%' })),
+      lastYear: m.usdK(s.valueYTD * 1.08), ytd: m.usdR(s.valueYTD),
+      rows: mine.map(m.row), noOrders: mine.length === 0, orderCount: mine.length + ' active',
+      info: [['Supplier name', s.name], ['Country', s.country], ['Contact person', s.contact], ['Email', s.email], ['Phone', s.phone], ['Website', s.web], ['Payment terms', s.terms], ['Currency', s.currency], ['Shipping terms', s.shipping]].map(([k, v]) => ({ k, v })),
+      note: s.onTime < 85 ? 'On-time rate below 85% this year. Ask for weekly production photos on open orders.' : 'Reliable on lead times. Confirm firmware version on each batch before dispatch.',
+      docs: [['Distributor agreement 2026', 'agreement-' + slug + '-2026.pdf', 'Jan 8'], ['Price list Q3', 'pricelist-' + slug + '-q3.xlsx', 'Jul 2'], ['Bank details (verified)', 'bank-' + slug + '.pdf', 'Mar 14'], ['Product certifications', 'ce-fcc-' + slug + '.pdf', 'Feb 20']].map(([type, file, date]) => ({ type, file, date, ext: file.split('.').pop().toUpperCase() }))
+    };
+  }
+}
+</script>
+</body>
+</html>

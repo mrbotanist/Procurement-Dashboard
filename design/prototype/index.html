@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-6e82d67d-20a2-45e3-801e-d6f3e66cc691/styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>:root{--color-bg:#f4f5f7;--color-surface:#f0f2f4;--color-text:#17181b;--color-divider:#e3e5e8;--color-accent:oklch(0.6 0.2 25);--color-neutral-100:#f7f8f9;--color-neutral-200:#eef0f2;--color-neutral-300:#e3e5e8;--color-neutral-400:#cdd0d5;--color-neutral-500:#a3a7ae;--color-neutral-600:#80848b;--color-neutral-700:#62666d;--color-neutral-800:#45484e;--color-neutral-900:#2b2d31;--font-heading:"Hanken Grotesk",system-ui,sans-serif;--font-body:"Hanken Grotesk",system-ui,sans-serif;--font-heading-weight:600;--radius-sm:6px;--radius-md:10px;--radius-lg:16px}
+body{font-family:var(--font-body)}h1,h2,h3{letter-spacing:-.02em}
+.btn{white-space:nowrap;flex:none;font-weight:600;border-radius:10px}.btn-primary{background:#17181b;color:#fff}.btn-primary:hover{background:#2e3035}.btn-primary:active{background:#000}.btn-secondary{background:#fff;border-color:#dcdfe3}.btn-secondary:hover{background:#f4f5f7}.btn-ghost{color:#17181b}.btn-ghost:hover{background:#eef0f2}.input{background:#fff;border-color:#dcdfe3;border-radius:10px}.input:focus-visible{border-color:oklch(0.6 0.15 255)}.seg{border-radius:10px;border-color:#dcdfe3;background:#fff;overflow:hidden}.dialog{background:#fff;border-radius:16px}:focus-visible{outline-color:oklch(0.6 0.15 255)}</style>
+<style>@media (max-width:1180px){[data-range]{display:none!important}[data-cta-long]{display:none}}@media (min-width:1181px){[data-cta-short]{display:none}}</style>
+<style>
+html,body{margin:0;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)}
+a{color:var(--color-accent-700)}
+a:hover{color:var(--color-accent)}
+</style>
+</helmet>
+
+<sc-if value="{{ isLogin }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="01 Login" style="min-height:100vh;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)">
+    <div style="background:#17181b;color:#fff;padding:var(--space-8);display:flex;flex-direction:column;justify-content:space-between;gap:48px">
+      <div style="display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;letter-spacing:.02em">
+        <span style="width:26px;height:26px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center"><span style="width:10px;height:10px;border-radius:50%;border:2px solid #17181b"></span></span>
+        FPV Procurement Hub
+      </div>
+      <h1 style="margin:0;font-size:clamp(40px,5.6vw,84px);line-height:1;letter-spacing:-.03em;max-width:12ch;text-wrap:balance">One place to know exactly where every purchase stands.</h1>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid rgba(255,255,255,.25);padding-top:var(--space-3);gap:var(--space-4);font-size:13px">
+        <span>Purchase orders, payments and production</span><span>Shipments, customs and incoming stock</span><span>Supplier and brand budgets</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;padding:var(--space-8)">
+      <form onSubmit="{{ signIn }}" style="width:100%;max-width:380px;display:flex;flex-direction:column;gap:var(--space-4)">
+        <div>
+          <h2 style="margin:0 0 6px;font-size:26px">Sign in</h2>
+          <p style="margin:0;font-size:14px;color:var(--color-neutral-700)">Use your company account.</p>
+        </div>
+        <div style="height:2px;background:var(--color-divider)"></div>
+        <div class="field"><label>Work email</label><input class="input" type="email" value="rashid.khan@fpvstore.ae" readOnly="{{ true }}"></input></div>
+        <div class="field"><label>Password</label><input class="input" type="password" value="••••••••••" readOnly="{{ true }}"></input></div>
+        <label class="radio"><input type="checkbox" checked="{{ true }}" readOnly="{{ true }}"></input><span class="dot"></span>Keep me signed in on this device</label>
+        <button type="submit" class="btn btn-primary" style="justify-content:space-between;padding:12px 14px;font-size:15px">Sign in<span>→</span></button>
+        <span style="font-size:13px;color:var(--color-neutral-700)">Trouble signing in? Contact your administrator.</span>
+      </form>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isApp }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;height:100vh;overflow:hidden">
+  <aside data-screen-label="Sidebar" style="flex:none;background:#fff;width:{{ sideW }};border-right:1px solid var(--color-divider);display:flex;flex-direction:column;overflow:hidden;transition:width .16s ease">
+    <div style="height:64px;flex:none;display:flex;align-items:center;gap:10px;padding:0 18px;border-bottom:1px solid var(--color-divider)">
+      <span style="width:26px;height:26px;flex:none;border-radius:8px;background:#17181b;display:flex;align-items:center;justify-content:center"><span style="width:10px;height:10px;border-radius:50%;border:2px solid #fff"></span></span>
+      <sc-if value="{{ expanded }}" hint-placeholder-val="{{ true }}">
+        <span style="font-weight:600;font-size:15px;white-space:nowrap">FPV Procurement Hub</span>
+      </sc-if>
+    </div>
+    <sc-if value="{{ expanded }}" hint-placeholder-val="{{ true }}">
+      <nav style="flex:1;overflow-y:auto;padding:var(--space-3) 0 var(--space-4);display:flex;flex-direction:column">
+        <sc-for list="{{ nav }}" as="g" hint-placeholder-count="8">
+          <div style="display:flex;flex-direction:column;padding:4px 0">
+            <sc-if value="{{ g.isLink }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ g.go }}" style="all:unset;cursor:pointer;display:flex;align-items:center;height:34px;margin:0 10px;padding:0 10px;border-radius:8px;font-size:14px;font-weight:{{ g.weight }};color:{{ g.fg }};background:{{ g.bg }}" style-hover="background:var(--color-neutral-100)">{{ g.label }}</button>
+            </sc-if>
+            <sc-if value="{{ g.isGroup }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:4px 18px 4px;font-size:12.5px;color:var(--color-neutral-600)">{{ g.label }}</div>
+              <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="3">
+                <button onClick="{{ it.go }}" style="all:unset;cursor:pointer;display:flex;align-items:center;justify-content:space-between;height:32px;margin:0 10px;padding:0 10px;border-radius:8px;font-size:14px;font-weight:{{ it.weight }};color:{{ it.fg }};background:{{ it.bg }}" style-hover="background:var(--color-neutral-100)">
+                  <span>{{ it.label }}</span>
+                  <sc-if value="{{ it.hasCount }}" hint-placeholder-val="{{ false }}">
+                    <span style="font-size:11px;font-weight:600;padding:1px 7px;border-radius:99px;background:var(--color-accent);color:var(--color-bg)">{{ it.count }}</span>
+                  </sc-if>
+                </button>
+              </sc-for>
+            </sc-if>
+          </div>
+        </sc-for>
+      </nav>
+    </sc-if>
+    <sc-if value="{{ collapsed }}" hint-placeholder-val="{{ false }}">
+      <nav style="flex:1;overflow-y:auto;padding:var(--space-3) 0;display:flex;flex-direction:column;align-items:center;gap:4px">
+        <sc-for list="{{ nav }}" as="g" hint-placeholder-count="8">
+          <button onClick="{{ g.go }}" title="{{ g.label }}" style="all:unset;cursor:pointer;width:40px;height:36px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:{{ g.fg }};background:{{ g.bg }}" style-hover="background:var(--color-neutral-100)">{{ g.mono }}</button>
+        </sc-for>
+      </nav>
+    </sc-if>
+    <div style="flex:none;border-top:1px solid var(--color-divider);padding:12px 18px;display:flex;align-items:center;gap:10px">
+      <div style="width:30px;height:30px;flex:none;border-radius:50%;background:var(--color-text);color:var(--color-bg);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600">RK</div>
+      <sc-if value="{{ expanded }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1;display:flex;flex-direction:column;line-height:1.25;white-space:nowrap;min-width:0">
+          <span style="font-size:13px;font-weight:600">Rashid Khan</span>
+          <span style="font-size:12px;color:var(--color-neutral-700)">Procurement Manager</span>
+        </div>
+        <button onClick="{{ signOut }}" class="btn btn-ghost" style="font-size:12px;padding:4px;white-space:nowrap">Sign out</button>
+      </sc-if>
+    </div>
+  </aside>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <header style="height:64px;flex:none;display:flex;align-items:center;gap:var(--space-3);padding:0 var(--space-6);border-bottom:1px solid var(--color-divider);position:relative;z-index:20">
+      <button onClick="{{ toggleSide }}" title="Collapse sidebar" class="btn btn-secondary btn-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3"></rect><path d="M9 3v18"></path></svg>
+      </button>
+      <div style="flex:1 1 160px;min-width:140px;max-width:460px;position:relative;display:flex;align-items:center">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;color:var(--color-neutral-600)"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <input class="input" value="{{ query }}" onChange="{{ onQuery }}" placeholder="Search PO, supplier, brand, SKU, tracking or invoice" style="padding-left:32px"></input>
+      </div>
+      <div style="flex:1"></div>
+      <div class="seg" data-range="1" style="flex:none">
+        <sc-for list="{{ ranges }}" as="r" hint-placeholder-count="3">
+          <button onClick="{{ r.go }}" style="all:unset;cursor:pointer;padding:7px 12px;font-size:13px;white-space:nowrap;border-left:{{ r.border }};background:{{ r.bg }};color:{{ r.fg }}">{{ r.label }}</button>
+        </sc-for>
+      </div>
+      <div style="position:relative">
+        <button onClick="{{ toggleNotif }}" title="Notifications" class="btn btn-secondary btn-icon" style="position:relative">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+          <sc-if value="{{ hasUnread }}" hint-placeholder-val="{{ true }}">
+            <span style="position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:var(--color-accent);color:var(--color-bg);font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center">{{ unread }}</span>
+          </sc-if>
+        </button>
+        <sc-if value="{{ notifOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;right:0;top:46px;width:400px;background:var(--color-bg);border:1px solid var(--color-divider);border-radius:14px;overflow:hidden;background:#fff;box-shadow:var(--shadow-lg)">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--color-divider)">
+              <span style="font-weight:600;font-size:15px">Notifications</span>
+              <span style="font-size:12px;color:var(--color-neutral-700)">{{ unread }} unresolved</span>
+            </div>
+            <sc-for list="{{ notifs }}" as="n" hint-placeholder-count="5">
+              <button onClick="{{ n.go }}" style="all:unset;cursor:pointer;display:grid;grid-template-columns:10px 1fr;gap:12px;padding:12px 16px;border-bottom:1px solid var(--color-neutral-200);width:100%;box-sizing:border-box" style-hover="background:var(--color-surface)">
+                <span style="width:10px;height:10px;margin-top:5px;border-radius:50%;background:{{ n.color }}"></span>
+                <span style="display:flex;flex-direction:column;gap:2px">
+                  <span style="font-size:14px;font-weight:600">{{ n.text }}</span>
+                  <span style="font-size:12px;color:var(--color-neutral-700)">{{ n.time }}</span>
+                </span>
+              </button>
+            </sc-for>
+            <button onClick="{{ goActions }}" class="btn btn-block" style="margin:0;padding:12px 16px;justify-content:space-between">Open action center<span>→</span></button>
+          </div>
+        </sc-if>
+      </div>
+      <button onClick="{{ goCreate }}" class="btn btn-primary" style="white-space:nowrap;height:36px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg><span data-cta-long="1">Create Purchase Order</span><span data-cta-short="1">New PO</span>
+      </button>
+    </header>
+
+    <main data-main="1" style="flex:1;overflow-y:auto">
+      <sc-if value="{{ s.dashboard }}" hint-placeholder-val="{{ true }}"><dc-import name="Panel Dashboard" hint-size="100%,1400px"></dc-import></sc-if>
+      <sc-if value="{{ s.pos }}" hint-placeholder-val="{{ false }}"><dc-import name="Panel Orders" hint-size="100%,900px"></dc-import></sc-if>
+      <sc-if value="{{ s.po }}" hint-placeholder-val="{{ false }}"><dc-import name="Panel PO Detail" hint-size="100%,1600px"></dc-import></sc-if>
+      <sc-if value="{{ s.create }}" hint-placeholder-val="{{ false }}"><dc-import name="Panel Create PO" hint-size="100%,900px"></dc-import></sc-if>
+      <sc-if value="{{ s.suppliers }}" hint-placeholder-val="{{ false }}"><dc-import name="Panel Suppliers" hint-size="100%,1000px"></dc-import></sc-if>
+      <sc-if value="{{ s.supplier }}" hint-placeholder-val="{{ false }}"><dc-import name="Panel Supplier Detail" hint-size="100%,1200px"></dc-import></sc-if>
+      <sc-if value="{{ s.budgets }}" hint-placeholder-val="{{ false }}"><dc-import name="Panel Budgets" hint-size="100%,1000px"></dc-import></sc-if>
+      <sc-if value="{{ s.inventory }}" hint-placeholder-val="{{ false }}"><dc-import name="Panel Inventory" hint-size="100%,900px"></dc-import></sc-if>
+      <sc-if value="{{ s.shipments }}" hint-placeholder-val="{{ false }}"><dc-import name="Panel Shipments" hint-size="100%,1000px"></dc-import></sc-if>
+      <sc-if value="{{ s.analytics }}" hint-placeholder-val="{{ false }}"><dc-import name="Panel Analytics" hint-size="100%,1200px"></dc-import></sc-if>
+      <sc-if value="{{ s.calendar }}" hint-placeholder-val="{{ false }}"><dc-import name="Panel Calendar" hint-size="100%,1000px"></dc-import></sc-if>
+      <sc-if value="{{ s.documents }}" hint-placeholder-val="{{ false }}"><dc-import name="Panel Documents" hint-size="100%,900px"></dc-import></sc-if>
+      <sc-if value="{{ s.actions }}" hint-placeholder-val="{{ false }}"><dc-import name="Panel Actions" hint-size="100%,900px"></dc-import></sc-if>
+      <sc-if value="{{ s.settings }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="Settings" style="max-width:1440px;margin:0 auto;padding:var(--space-8) var(--space-6)">
+          <h1 style="margin:0 0 6px;font-size:28px">Settings</h1>
+          <p style="margin:0;font-size:14px;color:var(--color-neutral-700)">Users, roles, currencies and notification rules. Not designed in this pass.</p>
+        </div>
+      </sc-if>
+    </main>
+  </div>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;login&quot;,&quot;dashboard&quot;,&quot;pos&quot;,&quot;po&quot;,&quot;create&quot;,&quot;suppliers&quot;,&quot;supplier&quot;,&quot;budgets&quot;,&quot;inventory&quot;,&quot;shipments&quot;,&quot;analytics&quot;,&quot;calendar&quot;,&quot;documents&quot;,&quot;actions&quot;],&quot;default&quot;:&quot;dashboard&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;sidebarCollapsed&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Prototype&quot;}}">
+const NAV = [
+  { label: 'Dashboard', key: 'dashboard' },
+  { label: 'Procurement', items: [['pos', 'All Purchase Orders', 'pos'], ['actions', 'Pending Actions', 'actions', 'count'], ['shipments', 'Incoming Shipments', 'shipments'], ['calendar', 'Purchase Calendar', 'calendar']] },
+  { label: 'Suppliers', items: [['suppliers', 'All Suppliers', 'suppliers'], ['supplierPerf', 'Supplier Performance', 'suppliers']] },
+  { label: 'Brands', items: [['budgets', 'Brand Budgets', 'budgets'], ['brandHistory', 'Purchase History', 'budgets']] },
+  { label: 'Inventory', items: [['stock', 'Current Stock', 'inventory'], ['incoming', 'Incoming Stock', 'inventory'], ['reorder', 'Reorder Alerts', 'inventory', 'reorder']] },
+  { label: 'Analytics', items: [['spend', 'Procurement Spend', 'analytics'], ['brandAnalysis', 'Brand Analysis', 'analytics'], ['productAnalysis', 'Product Analysis', 'analytics']] },
+  { label: 'Documents', key: 'documents' },
+  { label: 'Settings', key: 'settings' }
+];
+const SCREEN_KEY = { po: 'pos', create: 'pos', supplier: 'suppliers' };
+const SCREENS = ['dashboard', 'pos', 'po', 'create', 'suppliers', 'supplier', 'budgets', 'inventory', 'shipments', 'analytics', 'calendar', 'documents', 'actions', 'settings'];
+
+class Component extends DCLogic {
+  state = { range: 'YTD' };
+  componentDidMount() {
+    import(new URL('fpv-data-v2.js', document.baseURI).href).then(m => {
+      this.m = m;
+      const start = this.props.startScreen;
+      if (start && start !== 'dashboard') m.store.set({ screen: start });
+      if (this.props.sidebarCollapsed) m.store.set({ collapsed: true });
+      this.un = m.store.sub(() => this.forceUpdate());
+      this.forceUpdate();
+    });
+  }
+  componentWillUnmount() { this.un && this.un(); }
+  renderVals() {
+    const m = this.m;
+    if (!m) return {};
+    const st = m.store, S = st.s;
+    const collapsed = S.collapsed;
+    const activeKey = S.navKey || SCREEN_KEY[S.screen] || S.screen;
+    const unresolved = m.NOTIFS.filter(n => !S.resolved[n.id]);
+    const INK = 'var(--color-text)';
+    const nav = NAV.map(g => {
+      const on = g.key ? activeKey === g.key : g.items.some(i => i[0] === activeKey);
+      return {
+        label: g.label, mono: g.label[0], isLink: !!g.key, isGroup: !g.key,
+        go: () => g.key ? st.go(g.key) : st.go(g.items[0][2], { navKey: g.items[0][0] }),
+        fg: INK, weight: on && g.key ? 600 : 400,
+        bg: on && (g.key || collapsed) ? 'var(--color-neutral-200)' : 'transparent',
+        items: (g.items || []).map(([k, label, screen, c]) => {
+          const a = activeKey === k;
+          const count = c === 'count' ? unresolved.length : c === 'reorder' ? m.inventoryRows().filter(r => r.lvl === 'risk').length : 0;
+          return { label, count, hasCount: count > 0, go: () => st.go(screen, { navKey: k, ...(k === 'pos' ? { filter: null } : {}) }), fg: INK, weight: a ? 600 : 400, bg: a ? 'var(--color-neutral-200)' : 'transparent' };
+        })
+      };
+    });
+    const s = {}; SCREENS.forEach(k => s[k] = S.screen === k);
+    return {
+      isLogin: S.screen === 'login', isApp: S.screen !== 'login', s,
+      signIn: e => { e.preventDefault(); st.go('dashboard'); }, signOut: () => st.go('login'),
+      sideW: collapsed ? '72px' : '252px', expanded: !collapsed, collapsed,
+      toggleSide: () => st.set({ collapsed: !collapsed }),
+      nav, query: S.query,
+      onQuery: e => st.set({ query: e.target.value, ...(e.target.value && S.screen !== 'pos' ? { screen: 'pos', filter: null } : {}) }),
+      ranges: ['30 days', 'Quarter', 'YTD'].map((label, i) => ({ label, go: () => this.setState({ range: label }), bg: this.state.range === label ? 'var(--color-text)' : 'transparent', fg: this.state.range === label ? 'var(--color-bg)' : INK, border: i ? '1px solid var(--color-divider)' : 'none' })),
+      notifOpen: S.notifOpen, toggleNotif: () => st.set({ notifOpen: !S.notifOpen }),
+      unread: unresolved.length, hasUnread: unresolved.length > 0,
+      notifs: unresolved.slice(0, 6).map(n => ({ text: n.text, time: n.time, color: m.T[n.tone].dot, go: () => st.openPo(n.po) })),
+      goActions: () => st.go('actions'), goCreate: () => st.go('create')
+    };
+  }
+}
+</script>
+</body>
+</html>

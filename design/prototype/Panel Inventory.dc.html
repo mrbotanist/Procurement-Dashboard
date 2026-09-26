@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-6e82d67d-20a2-45e3-801e-d6f3e66cc691/styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>:root{--color-bg:#f4f5f7;--color-surface:#f0f2f4;--color-text:#17181b;--color-divider:#e3e5e8;--color-accent:oklch(0.6 0.2 25);--color-neutral-100:#f7f8f9;--color-neutral-200:#eef0f2;--color-neutral-300:#e3e5e8;--color-neutral-400:#cdd0d5;--color-neutral-500:#a3a7ae;--color-neutral-600:#80848b;--color-neutral-700:#62666d;--color-neutral-800:#45484e;--color-neutral-900:#2b2d31;--font-heading:"Hanken Grotesk",system-ui,sans-serif;--font-body:"Hanken Grotesk",system-ui,sans-serif;--font-heading-weight:600;--radius-sm:6px;--radius-md:10px;--radius-lg:16px}
+body{font-family:var(--font-body)}h1,h2,h3{letter-spacing:-.02em}
+.btn{white-space:nowrap;flex:none;font-weight:600;border-radius:10px}.btn-primary{background:#17181b;color:#fff}.btn-primary:hover{background:#2e3035}.btn-primary:active{background:#000}.btn-secondary{background:#fff;border-color:#dcdfe3}.btn-secondary:hover{background:#f4f5f7}.btn-ghost{color:#17181b}.btn-ghost:hover{background:#eef0f2}.input{background:#fff;border-color:#dcdfe3;border-radius:10px}.input:focus-visible{border-color:oklch(0.6 0.15 255)}.seg{border-radius:10px;border-color:#dcdfe3;background:#fff;overflow:hidden}.dialog{background:#fff;border-radius:16px}:focus-visible{outline-color:oklch(0.6 0.15 255)}</style>
+</helmet>
+<div data-screen-label="09 Incoming Inventory" style="max-width:1480px;margin:0 auto;padding:var(--space-6) var(--space-6) 64px;display:flex;flex-direction:column;gap:var(--space-6)">
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-4);flex-wrap:wrap;padding-bottom:var(--space-3);border-bottom:0">
+    <div>
+      <h1 style="margin:0 0 4px;font-size:28px">Incoming Inventory</h1>
+      <p style="margin:0;font-size:15px;color:var(--color-neutral-700)">Current stock against open purchase orders. Cover is based on 30-day sales rate.</p>
+    </div>
+    <div class="seg">
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3">
+        <button onClick="{{ t.go }}" style="all:unset;cursor:pointer;padding:7px 14px;font-size:13px;display:flex;gap:8px;border-left:{{ t.border }};background:{{ t.bg }};color:{{ t.fg }}">{{ t.label }}<b>{{ t.n }}</b></button>
+      </sc-for>
+    </div>
+  </div>
+
+  <sc-for list="{{ alerts }}" as="a" hint-placeholder-count="1">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;background:oklch(0.96 0.03 25);border-radius:10px;color:var(--color-accent-800);font-size:15px;flex-wrap:wrap">
+      <span style="display:flex;gap:10px;align-items:center"><span style="width:10px;height:10px;border-radius:50%;background:var(--color-accent)"></span><span><b>{{ a.name }}</b> — Expected stockout before next shipment arrives. {{ a.risk }}.</span></span>
+      <div style="display:flex;gap:8px"><button onClick="{{ a.open }}" class="btn btn-secondary" style="color:var(--color-accent-800)">View {{ a.po }}</button><button onClick="{{ reorder }}" class="btn btn-primary">Expedite / reorder</button></div>
+    </div>
+  </sc-for>
+
+  <div style="overflow-x:auto;background:#fff;border:1px solid var(--color-divider);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(20,22,28,.04);padding:6px 20px 8px"><div style="min-width:1000px">
+    <div style="display:grid;grid-template-columns:minmax(200px,1.5fr) 140px 90px 90px 110px 70px 90px minmax(200px,1.3fr);gap:12px;padding:10px 0;border-bottom:1px solid var(--color-divider);font-size:12.5px;color:var(--color-neutral-700)">
+      <span>Product</span><span>SKU</span><span style="text-align:right">Current Stock</span><span style="text-align:right">Incoming</span><span style="text-align:right">Expected Total</span><span>ETA</span><span style="text-align:right">Cover</span><span>Status</span>
+    </div>
+    <sc-for list="{{ rows }}" as="r" hint-placeholder-count="8">
+      <div onClick="{{ r.open }}" style="cursor:pointer;display:grid;grid-template-columns:minmax(200px,1.5fr) 140px 90px 90px 110px 70px 90px minmax(200px,1.3fr);gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--color-neutral-200);font-size:14px;font-variant-numeric:tabular-nums" style-hover="background:var(--color-surface)">
+        <b>{{ r.name }}</b>
+        <span style="font-size:13px;color:var(--color-neutral-800)">{{ r.sku }}</span>
+        <span style="text-align:right;font-weight:600;color:{{ r.riskColor }}">{{ r.stock }}</span>
+        <span style="text-align:right">+{{ r.incoming }}</span>
+        <span style="text-align:right">{{ r.total }}</span>
+        <span>{{ r.eta }}</span>
+        <span style="text-align:right">{{ r.cover }}</span>
+        <span style="display:flex;flex-direction:column;gap:2px"><span><span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:99px;font-size:12px;background:{{ r.tag.bg }};color:{{ r.tag.fg }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ r.tag.dot }}"></span>{{ r.tagLabel }}</span></span><span style="font-size:12px;color:{{ r.riskColor }}">{{ r.risk }}</span></span>
+      </div>
+    </sc-for>
+  </div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { tab: null };
+  componentDidMount() {
+    import(new URL('fpv-data-v2.js', document.baseURI).href).then(m => { this.m = m; this.un = m.store.sub(() => this.forceUpdate()); this.forceUpdate(); });
+  }
+  componentWillUnmount() { this.un && this.un(); }
+  renderVals() {
+    const m = this.m;
+    if (!m) return {};
+    const nk = m.store.s.navKey;
+    const tab = this.state.tab || (nk === 'reorder' ? 'reorder' : nk === 'stock' ? 'stock' : 'incoming');
+    const all = m.inventoryRows().sort((a, b) => ({ risk: 0, warn: 1, ok: 2 })[a.lvl] - ({ risk: 0, warn: 1, ok: 2 })[b.lvl]);
+    const risk = all.filter(r => r.lvl === 'risk');
+    const rows = tab === 'reorder' ? all.filter(r => r.lvl !== 'ok') : tab === 'stock' ? [...all].sort((a, b) => a.stock - b.stock) : all;
+    return {
+      tabs: [['stock', 'Current stock', all.length], ['incoming', 'Incoming', all.length], ['reorder', 'Reorder alerts', risk.length]].map(([k, label, n], i) => ({ label, n, go: () => this.setState({ tab: k }), bg: tab === k ? 'var(--color-text)' : 'transparent', fg: tab === k ? 'var(--color-bg)' : 'var(--color-text)', border: i ? '1px solid var(--color-divider)' : 'none' })),
+      alerts: risk.slice(0, 1), rows, reorder: () => m.store.go('create')
+    };
+  }
+}
+</script>
+</body>
+</html>

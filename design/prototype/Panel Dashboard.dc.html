@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-6e82d67d-20a2-45e3-801e-d6f3e66cc691/styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>:root{--color-bg:#f4f5f7;--color-surface:#f0f2f4;--color-text:#17181b;--color-divider:#e3e5e8;--color-accent:oklch(0.6 0.2 25);--color-neutral-100:#f7f8f9;--color-neutral-200:#eef0f2;--color-neutral-300:#e3e5e8;--color-neutral-400:#cdd0d5;--color-neutral-500:#a3a7ae;--color-neutral-600:#80848b;--color-neutral-700:#62666d;--color-neutral-800:#45484e;--color-neutral-900:#2b2d31;--font-heading:"Hanken Grotesk",system-ui,sans-serif;--font-body:"Hanken Grotesk",system-ui,sans-serif;--font-heading-weight:600;--radius-sm:6px;--radius-md:10px;--radius-lg:16px}
+body{font-family:var(--font-body)}h1,h2,h3{letter-spacing:-.02em}
+.btn{white-space:nowrap;flex:none;font-weight:600;border-radius:10px}.btn-primary{background:#17181b;color:#fff}.btn-primary:hover{background:#2e3035}.btn-primary:active{background:#000}.btn-secondary{background:#fff;border-color:#dcdfe3}.btn-secondary:hover{background:#f4f5f7}.btn-ghost{color:#17181b}.btn-ghost:hover{background:#eef0f2}.input{background:#fff;border-color:#dcdfe3;border-radius:10px}.input:focus-visible{border-color:oklch(0.6 0.15 255)}.seg{border-radius:10px;border-color:#dcdfe3;background:#fff;overflow:hidden}.dialog{background:#fff;border-radius:16px}:focus-visible{outline-color:oklch(0.6 0.15 255)}</style>
+</helmet>
+<div data-screen-label="02 Dashboard" style="max-width:1480px;margin:0 auto;padding:var(--space-6) var(--space-6) 64px;display:flex;flex-direction:column;gap:var(--space-8)">
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-4);flex-wrap:wrap">
+    <div>
+      <h1 style="margin:0 0 4px;font-size:28px">Procurement Dashboard</h1>
+      <p style="margin:0;font-size:15px;color:var(--color-neutral-700)">Overview of purchasing activity, payments, shipments and incoming inventory.</p>
+    </div>
+    <span style="font-size:13px;color:var(--color-neutral-700)">Saturday, September 26, 2026 · Updated 4 min ago</span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px">
+    <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="6">
+      <button onClick="{{ k.go }}" style="all:unset;cursor:pointer;padding:16px 18px;display:flex;flex-direction:column;gap:6px;background:#fff;border:1px solid var(--color-divider);border-radius:14px;box-shadow:0 1px 2px rgba(20,22,28,.04)" style-hover="border-color:var(--color-neutral-400)">
+        <span style="display:flex;align-items:center;gap:8px;font-size:13px;line-height:1.3;white-space:nowrap;color:var(--color-neutral-700)"><span style="width:8px;height:8px;border-radius:50%;background:{{ k.dot }}"></span>{{ k.label }}</span>
+        <span style="font-size:34px;font-weight:600;letter-spacing:-.02em;line-height:1;color:{{ k.valColor }}">{{ k.value }}</span>
+        <span style="font-size:13px;color:var(--color-neutral-700)">{{ k.sub }}</span>
+      </button>
+    </sc-for>
+  </div>
+
+  <section style="background:#fff;border:1px solid var(--color-divider);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(20,22,28,.04);display:flex;flex-direction:column">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-4);padding-bottom:var(--space-3);border-bottom:0">
+      <div style="display:flex;align-items:center;gap:var(--space-3)">
+        <span style="height:26px;padding:0 10px;border-radius:99px;background:oklch(0.95 0.035 25);color:oklch(0.5 0.17 25);font-weight:600;font-size:13px;order:2;display:flex;align-items:center;justify-content:center">{{ actionTotal }}</span>
+        <div>
+          <h2 style="margin:0;font-size:18px">Action Required</h2>
+          <p style="margin:0;font-size:14px;color:var(--color-neutral-700)">Items that may require your attention.</p>
+        </div>
+      </div>
+      <button onClick="{{ goActions }}" class="btn btn-ghost">Open action center →</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;margin-top:8px">
+      <sc-for list="{{ actions }}" as="a" hint-placeholder-count="4">
+        <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;background:var(--color-neutral-100);border:1px solid var(--color-neutral-200);border-radius:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:{{ a.fg }}"><span style="width:10px;height:10px;border-radius:50%;background:{{ a.dot }}"></span>{{ a.title }}</span>
+            <span style="font-size:32px;font-weight:600;line-height:1">{{ a.count }}</span>
+          </div>
+          <p style="margin:0;font-size:15px;line-height:1.4;text-wrap:pretty;flex:1">{{ a.desc }}</p>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            <sc-for list="{{ a.refs }}" as="r" hint-placeholder-count="2">
+              <button onClick="{{ r.go }}" style="all:unset;cursor:pointer;font-size:12px;font-weight:600;padding:2px 6px;background:var(--color-neutral-200);border-radius:6px;font-variant-numeric:tabular-nums" style-hover="background:var(--color-neutral-300)">{{ r.id }}</button>
+            </sc-for>
+          </div>
+          <button onClick="{{ a.go }}" class="btn btn-secondary" style="align-self:stretch;justify-content:space-between">{{ a.cta }}<span>→</span></button>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="background:#fff;border:1px solid var(--color-divider);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(20,22,28,.04);display:flex;flex-direction:column;gap:var(--space-4)">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-4);padding-bottom:var(--space-3);border-bottom:0;flex-wrap:wrap">
+      <div>
+        <h2 style="margin:0;font-size:18px">Procurement Pipeline</h2>
+        <p style="margin:0;font-size:14px;color:var(--color-neutral-700)">Active orders by stage. Select a stage to filter purchase orders.</p>
+      </div>
+      <span style="font-size:13px;color:var(--color-neutral-700)">24 open · 36 closed this year</span>
+    </div>
+    <div style="overflow-x:auto">
+      <div style="display:grid;grid-template-columns:repeat(12,minmax(80px,1fr));min-width:980px;align-items:end">
+        <sc-for list="{{ pipeline }}" as="s" hint-placeholder-count="12">
+          <button onClick="{{ s.go }}" style="all:unset;cursor:pointer;display:flex;flex-direction:column;gap:8px;padding:8px 10px 10px 0;border-radius:10px;padding-left:10px" style-hover="background:var(--color-neutral-100)">
+            <span style="font-size:11px;color:var(--color-neutral-600);font-variant-numeric:tabular-nums">{{ s.n }}</span>
+            <span style="font-size:30px;font-weight:600;letter-spacing:-.02em;line-height:1;color:{{ s.numColor }}">{{ s.count }}</span>
+            <span style="height:{{ s.barH }};border-radius:5px;background:{{ s.bar }}"></span>
+            <span style="font-size:13px;line-height:1.2;color:{{ s.labelColor }};min-height:32px">{{ s.label }}</span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <div style="display:flex;flex-wrap:wrap;gap:var(--space-8);align-items:flex-start">
+    <section style="background:#fff;border:1px solid var(--color-divider);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(20,22,28,.04);flex:1 1 720px;min-width:0;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:var(--space-3);border-bottom:0">
+        <div>
+          <h2 style="margin:0;font-size:18px">Active Purchase Orders</h2>
+          <p style="margin:0;font-size:14px;color:var(--color-neutral-700)">Payment, production and shipment tracked separately. Sorted by health.</p>
+        </div>
+        <button onClick="{{ goPos }}" class="btn btn-ghost">View all →</button>
+      </div>
+      <div style="overflow-x:auto">
+        <div style="min-width:900px">
+          <div style="display:grid;grid-template-columns:96px minmax(120px,1.2fr) 84px 124px 120px 110px 60px 150px;gap:12px;padding:10px 0;border-bottom:1px solid var(--color-divider);font-size:12.5px;color:var(--color-neutral-700)">
+            <span>PO</span><span>Supplier</span><span style="text-align:right">Value</span><span>Payment</span><span>Production</span><span>Shipment</span><span>ETA</span><span>Health</span>
+          </div>
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="8">
+            <div onClick="{{ r.open }}" style="cursor:pointer;display:grid;grid-template-columns:96px minmax(120px,1.2fr) 84px 124px 120px 110px 60px 150px;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid var(--color-neutral-200);font-size:14px" style-hover="background:var(--color-surface)">
+              <span style="font-weight:600;font-variant-numeric:tabular-nums">{{ r.id }}</span>
+              <span style="display:flex;flex-direction:column;line-height:1.25"><span>{{ r.supplier }}</span><span style="font-size:12px;color:var(--color-neutral-700)">{{ r.origin }}</span></span>
+              <span style="text-align:right;font-variant-numeric:tabular-nums">{{ r.value }}</span>
+              <span><span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:99px;font-size:12px;white-space:nowrap;background:{{ r.pay.bg }};color:{{ r.pay.fg }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ r.pay.dot }}"></span>{{ r.pay.label }}</span></span>
+              <span><span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:99px;font-size:12px;white-space:nowrap;background:{{ r.prod.bg }};color:{{ r.prod.fg }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ r.prod.dot }}"></span>{{ r.prod.label }}</span></span>
+              <span><span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:99px;font-size:12px;white-space:nowrap;background:{{ r.ship.bg }};color:{{ r.ship.fg }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ r.ship.dot }}"></span>{{ r.ship.label }}</span></span>
+              <span style="font-variant-numeric:tabular-nums">{{ r.eta }}</span>
+              <span style="display:flex;flex-direction:column;line-height:1.25"><span style="display:inline-flex;align-items:center;gap:7px;font-weight:600"><span style="width:9px;height:9px;border-radius:50%;background:{{ r.health.dot }}"></span>{{ r.health.label }}</span><span style="font-size:12px;color:var(--color-neutral-700)">{{ r.reason }}</span></span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <section style="background:#fff;border:1px solid var(--color-divider);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(20,22,28,.04);flex:1 1 320px;min-width:0;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:var(--space-3);border-bottom:0">
+        <div>
+          <h2 style="margin:0;font-size:18px">Coming Up</h2>
+          <p style="margin:0;font-size:14px;color:var(--color-neutral-700)">Next 10 days</p>
+        </div>
+        <button onClick="{{ goCalendar }}" class="btn btn-ghost">Calendar →</button>
+      </div>
+      <sc-for list="{{ events }}" as="e" hint-placeholder-count="6">
+        <div style="display:grid;grid-template-columns:52px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid var(--color-neutral-200)">
+          <div style="display:flex;flex-direction:column;line-height:1.05">
+            <span style="font-size:12.5px;color:var(--color-neutral-700)">{{ e.dow }}</span>
+            <span style="font-size:24px;font-weight:600">{{ e.day }}</span>
+            <span style="font-size:11px;color:var(--color-neutral-700)">{{ e.mon }}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;justify-content:center">
+            <sc-for list="{{ e.items }}" as="i" hint-placeholder-count="1">
+              <button onClick="{{ i.go }}" style="all:unset;cursor:pointer;display:grid;grid-template-columns:8px 1fr auto;gap:8px;align-items:center;font-size:14px" style-hover="color:var(--color-accent)">
+                <span style="width:8px;height:8px;border-radius:50%;background:{{ i.color }}"></span>
+                <span>{{ i.label }}</span>
+                <span style="font-size:11px;color:var(--color-neutral-700)">{{ i.type }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </section>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:var(--space-8);align-items:start">
+    <section style="background:#fff;border:1px solid var(--color-divider);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(20,22,28,.04);display:flex;flex-direction:column;gap:var(--space-4)">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:var(--space-3);border-bottom:0">
+        <h2 style="margin:0;font-size:18px">Monthly Spend</h2>
+        <button onClick="{{ goAnalytics }}" class="btn btn-ghost">Analytics →</button>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <span style="font-size:36px;font-weight:600;letter-spacing:-.02em">$496K</span>
+        <span style="font-size:13px;color:var(--color-neutral-700)">year to date · Sep +13.6% vs Aug</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(9,1fr);gap:6px;align-items:end;height:170px;border-bottom:1px solid var(--color-divider)">
+        <sc-for list="{{ spend }}" as="m" hint-placeholder-count="9">
+          <div style="height:100%;display:flex;flex-direction:column;justify-content:flex-end;gap:4px">
+            <span style="font-size:11px;color:var(--color-neutral-700);font-variant-numeric:tabular-nums">{{ m.v }}</span>
+            <div style="height:{{ m.h }};background:{{ m.bg }}"></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(9,1fr);gap:6px;margin-top:-10px">
+        <sc-for list="{{ spend }}" as="m" hint-placeholder-count="9">
+          <span style="font-size:11px;color:var(--color-neutral-700)">{{ m.m }}</span>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="background:#fff;border:1px solid var(--color-divider);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(20,22,28,.04);display:flex;flex-direction:column;gap:var(--space-3)">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:var(--space-3);border-bottom:0">
+        <h2 style="margin:0;font-size:18px">Brand Budgets</h2>
+        <button onClick="{{ goBudgets }}" class="btn btn-ghost">All brands →</button>
+      </div>
+      <sc-for list="{{ budgets }}" as="b" hint-placeholder-count="5">
+        <div style="display:flex;flex-direction:column;gap:6px;padding-bottom:10px;border-bottom:1px solid var(--color-neutral-200)">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:14px">
+            <span style="font-weight:600">{{ b.brand }}</span>
+            <span style="font-size:13px;color:var(--color-neutral-700)"><b style="color:var(--color-text)">{{ b.util }}</b> used · {{ b.avail }} left</span>
+          </div>
+          <div style="display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--color-neutral-200)">
+            <div style="width:{{ b.wP }};background:var(--color-neutral-800)"></div>
+            <div style="width:{{ b.wC }};background:{{ b.cBg }}"></div>
+          </div>
+        </div>
+      </sc-for>
+      <div style="display:flex;gap:16px;font-size:12px;color:var(--color-neutral-700);flex-wrap:wrap">
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:var(--color-text)"></span>Purchased</span>
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:var(--color-neutral-500)"></span>Committed</span>
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:var(--color-accent)"></span>Committed, over 95%</span>
+      </div>
+    </section>
+
+    <section style="background:#fff;border:1px solid var(--color-divider);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px rgba(20,22,28,.04);display:flex;flex-direction:column;gap:var(--space-3)">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:var(--space-3);border-bottom:0">
+        <h2 style="margin:0;font-size:18px">Incoming Inventory</h2>
+        <button onClick="{{ goInventory }}" class="btn btn-ghost">All stock →</button>
+      </div>
+      <div style="padding:10px 12px;background:oklch(0.96 0.03 25);border-radius:10px;color:var(--color-accent-800);font-size:14px;line-height:1.4;display:grid;grid-template-columns:10px 1fr;gap:10px">
+        <span style="width:10px;height:10px;margin-top:5px;border-radius:50%;background:var(--color-accent)"></span>
+        <span><b>DJI O4</b> — Expected stockout before next shipment arrives.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 52px 64px 56px;gap:10px;font-size:12.5px;color:var(--color-neutral-700);padding:4px 0 8px;border-bottom:1px solid var(--color-divider)">
+        <span>Product</span><span style="text-align:right">Stock</span><span style="text-align:right">Incoming</span><span style="text-align:right">ETA</span>
+      </div>
+      <sc-for list="{{ incoming }}" as="p" hint-placeholder-count="5">
+        <div onClick="{{ p.open }}" style="cursor:pointer;display:grid;grid-template-columns:minmax(0,1fr) 52px 64px 56px;gap:10px;align-items:center;font-size:14px;padding:4px 0 8px;border-bottom:1px solid var(--color-neutral-200);margin-top:-4px" style-hover="background:var(--color-surface)">
+          <span style="display:flex;flex-direction:column;line-height:1.25;min-width:0"><span style="font-weight:600">{{ p.name }}</span><span style="font-size:12px;color:{{ p.riskColor }}">{{ p.risk }}</span></span>
+          <span style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:{{ p.riskColor }}">{{ p.stock }}</span>
+          <span style="text-align:right;font-variant-numeric:tabular-nums">+{{ p.incoming }}</span>
+          <span style="text-align:right;font-variant-numeric:tabular-nums">{{ p.eta }}</span>
+        </div>
+      </sc-for>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  componentDidMount() {
+    import(new URL('fpv-data-v2.js', document.baseURI).href).then(m => { this.m = m; this.un = m.store.sub(() => this.forceUpdate()); this.forceUpdate(); });
+  }
+  componentWillUnmount() { this.un && this.un(); }
+  renderVals() {
+    const m = this.m;
+    if (!m) return {};
+    const st = m.store, T = m.T, pos = m.sortedPos();
+    const ft = f => () => st.go('pos', { filter: f });
+    const cnt = f => pos.filter(p => m.matches(p, f)).length;
+    const F = { delayed: { type: 'health', value: 'Delayed', label: 'Delayed' }, pay: { type: 'pay', label: 'Payment pending' }, unconf: { type: 'unconfirmed', label: 'Unconfirmed' }, prod: { type: 'prod', label: 'In production' }, transit: { type: 'transit', label: 'In transit' } };
+    const nDelayed = cnt(F.delayed), nPay = cnt(F.pay), nUnconf = cnt(F.unconf), nCustoms = cnt({ type: 'customs' });
+    const INK = 'var(--color-text)';
+    const kpis = [
+      { label: 'Open POs', value: '24', sub: 'Active purchase orders', dot: INK, go: ft(null) },
+      { label: 'Payment Pending', value: String(nPay), sub: 'Orders awaiting payment', dot: T.orange.dot, go: ft(F.pay) },
+      { label: 'In Production', value: '8', sub: 'Orders currently being manufactured', dot: T.blue.dot, go: ft(F.prod) },
+      { label: 'In Transit', value: '11', sub: 'Shipments currently moving', dot: T.blue.dot, go: () => st.go('shipments') },
+      { label: 'Delayed', value: String(nDelayed), sub: 'Orders requiring attention', dot: T.red.dot, valColor: 'var(--color-accent)', go: ft(F.delayed) },
+      { label: 'Procurement YTD', value: '$496K', sub: 'Total procurement this year', dot: INK, go: () => st.go('analytics') }
+    ].map(k => ({ valColor: INK, ...k }));
+    const ids = f => pos.filter(p => m.matches(p, f)).map(p => ({ id: p.id, go: () => st.openPo(p.id) }));
+    const actions = [
+      { title: 'Delayed Orders', tone: 'red', count: nDelayed, desc: nDelayed + ' purchase orders are past their expected completion date.', cta: 'View Orders', refs: ids(F.delayed), go: ft(F.delayed) },
+      { title: 'Payments Due', tone: 'orange', count: nPay, desc: nPay + ' supplier payments are pending.', cta: 'Review Payments', refs: ids(F.pay), go: ft(F.pay) },
+      { title: 'Supplier Confirmation', tone: 'orange', count: nUnconf, desc: nUnconf + ' purchase orders have not been confirmed by suppliers.', cta: 'Review Orders', refs: ids(F.unconf), go: ft(F.unconf) },
+      { title: 'Customs Documents', tone: 'orange', count: nCustoms, desc: nCustoms + ' shipment is awaiting required customs documentation.', cta: 'View Shipment', refs: ids({ type: 'customs' }), go: () => st.go('shipments', { shipmentId: 'FX-26095' }) }
+    ].map(a => ({ ...a, fg: T[a.tone].fg, dot: T[a.tone].dot }));
+    const maxStage = 18;
+    const pipeline = m.STAGES.map(([label, count], i) => {
+      const closed = i >= 10;
+      return { label, count, n: String(i + 1).padStart(2, '0'), go: ft({ type: 'stage', value: label, label }), numColor: closed ? 'var(--color-neutral-600)' : label === 'Customs' ? T.orange.fg : INK, labelColor: closed ? 'var(--color-neutral-600)' : INK, bar: closed ? 'var(--color-neutral-200)' : label === 'Customs' ? T.orange.dot : 'oklch(0.6 0.15 255)', barH: Math.max(4, Math.round(Math.min(count, maxStage) / maxStage * 28)) + 'px' };
+    });
+    const groups = [];
+    m.EVENTS.filter(e => e[0] >= m.TODAY && m.days(m.TODAY, e[0]) <= 10).forEach(([d, label, type, id]) => {
+      let g = groups.find(x => x.key === d);
+      if (!g) { const D = m.dt(d); g = { key: d, day: D.getDate(), dow: m.DOW[D.getDay()], mon: m.MON[D.getMonth()], items: [] }; groups.push(g); }
+      g.items.push({ label, type, color: m.EV_TYPES[type], go: () => st.openPo(id) });
+    });
+    const maxS = Math.max(...m.SPEND.map(s => s[1]));
+    return {
+      kpis, actions, actionTotal: nDelayed + nPay + nUnconf + nCustoms, pipeline,
+      rows: pos.slice(0, 8).map(m.row), events: groups.slice(0, 7),
+      spend: m.SPEND.map(([mo, v], i) => ({ m: mo, v: '$' + v + 'K', h: Math.round(v / maxS * 84) + '%', bg: i === m.SPEND.length - 1 ? 'oklch(0.6 0.15 255)' : 'var(--color-neutral-300)' })),
+      budgets: m.BUDGETS.slice(0, 5).map(([brand, b, p, c]) => ({ brand, util: Math.round(p / b * 100) + '%', avail: '$' + (b - p - c) + 'K', wP: (p / b * 100) + '%', wC: (c / b * 100) + '%', cBg: (p + c) / b > 0.95 ? 'var(--color-accent)' : 'var(--color-neutral-500)' })),
+      incoming: m.inventoryRows().sort((a, b) => ({ risk: 0, warn: 1, ok: 2 })[a.lvl] - ({ risk: 0, warn: 1, ok: 2 })[b.lvl]).slice(0, 5),
+      goActions: () => st.go('actions'), goPos: () => st.go('pos', { filter: null }), goCalendar: () => st.go('calendar'),
+      goAnalytics: () => st.go('analytics'), goBudgets: () => st.go('budgets'), goInventory: () => st.go('inventory')
+    };
+  }
+}
+</script>
+</body>
+</html>
