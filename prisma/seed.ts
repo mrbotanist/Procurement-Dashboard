@@ -1,6 +1,8 @@
-// Seed data ported from design/prototype/fpv-data-v2.js.
-// The sample data is anchored on 2026-09-26 ("today" in the prototype).
-// Run: npm run db:seed   (wipes and reloads every table)
+// Seed data ported from design/prototype/fpv-data-v2.js, plus this year's closed-order history
+// so spend, budgets and supplier performance have something to show.
+// The sample is written for 2026-09-26 ("today" in the prototype). Every date is shifted by
+// (real today − 2026-09-26) so the demo looks the same whenever you seed it.
+// Run: npm run db:seed   (WIPES and reloads every table)
 
 import "dotenv/config";
 import bcrypt from "bcryptjs";
@@ -12,7 +14,6 @@ import type {
   CustomsStatus,
   DocumentType,
   InventoryStatus,
-  NotificationTone,
   PaymentStatus,
   PoStatus,
   ProductionStatus,
@@ -20,13 +21,22 @@ import type {
   ShipmentMilestone,
   ShipmentStatus,
 } from "../src/generated/prisma/enums";
-import { addDays, fromIsoDate, type IsoDate } from "../src/lib/dates";
-import { computeHealth } from "../src/lib/domain/health";
+import { addDays, daysBetween, fromIsoDate, todayIso, type IsoDate } from "../src/lib/dates";
+import { customsCosts } from "../src/lib/domain/customs";
+import { defaultSchedule } from "../src/lib/domain/payments";
+import { poTotal } from "../src/lib/domain/totals";
+import { syncNotifications } from "../src/server/jobs/notifications";
+import { recalcPo, refreshSupplierStats } from "../src/server/recalc";
 
+/** "Today" the sample data was written for. */
 const TODAY: IsoDate = "2026-09-26";
+const REAL_TODAY = todayIso();
+const SHIFT = daysBetween(TODAY, REAL_TODAY);
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
-const D = fromIsoDate;
+/** Sample date → stored date, shifted to the real calendar. */
+const D = (s: IsoDate) => fromIsoDate(addDays(s, SHIFT));
 const min = (a: IsoDate, b: IsoDate) => (a < b ? a : b);
+const users = new Map<Role, string>();
 
 // ─── Users ───────────────────────────────────────────────────────────────────
 
@@ -64,29 +74,43 @@ const BUDGETS: [string, number][] = [
 ];
 
 // ─── Products ────────────────────────────────────────────────────────────────
-// sku, name, brand, category, stock, units sold per day.
+// sku, name, brand, category, stock, units sold per day, usual unit price.
 // Stock and sales rates for the 8 SKUs on the prototype's inventory screen are taken from it;
 // the rest are illustrative.
 
-const PRODUCTS: [string, string, string, string, number, number][] = [
-  ["GE-2207-1750", "GEPRC 2207 Motor", "GEPRC", "Motors", 32, 4],
-  ["GE-5PROP", "Propeller", "GEPRC", "Propellers", 640, 12],
-  ["TM-F60P-2207", "T-Motor F60 Pro V 2207 Motor", "T-Motor", "Motors", 48, 1.2],
-  ["CD-WALNUT-4K", "Caddx Walnut 4K Camera", "Caddx", "Cameras", 11, 0.8],
-  ["CD-ANT-LITE", "Caddx Ant Lite Camera", "Caddx", "Cameras", 85, 1.5],
-  ["IF-XING2-2207", "iFlight XING2 2207 Motor", "iFlight", "Motors", 120, 2],
-  ["IF-BLITZ-E55", "iFlight BLITZ E55 ESC", "iFlight", "ESCs", 14, 0.3],
-  ["FX-RAZER-MINI", "Foxeer Razer Mini Camera", "Foxeer", "Cameras", 26, 1.2],
-  ["FX-LOLLI4", "Foxeer Lollipop 4 Antenna", "Foxeer", "Antennas", 210, 3],
-  ["RM-BOXER-ELRS", "RadioMaster Boxer ELRS", "RadioMaster", "Radios", 3, 0.4],
-  ["RM-RP1", "RadioMaster RP1 ELRS Receiver", "RadioMaster", "Receivers", 64, 1.1],
-  ["HG-ZEUS-F722", "HGLRC Zeus F722 Flight Controller", "HGLRC", "Flight Controllers", 14, 0.6],
-  ["BF-CETUS-X", "BetaFPV Cetus X Kit", "BetaFPV", "Kits", 12, 0.3],
-  ["DJI-O4-AIR", "DJI O4 Air Unit", "DJI", "Digital FPV", 4, 1],
-  ["SB-F405-V4", "SpeedyBee F405 V4 Stack", "SpeedyBee", "Flight Controllers", 9, 0.9],
-  ["TBS-CRSF-NANO", "TBS Crossfire Nano RX", "Team BlackSheep", "Receivers", 58, 1],
-  ["TBS-UNIFY-PRO32", "TBS Unify Pro32 VTX", "Team BlackSheep", "Video Transmitters", 37, 0.7],
-  ["AX-VIMANA-2207", "Vimana 2207 Motor", "Axisflying", "Motors", 18, 1.5],
+const PRODUCTS: [string, string, string, string, number, number, number][] = [
+  ["GE-2207-1750", "GEPRC 2207 Motor", "GEPRC", "Motors", 32, 4, 12],
+  ["GE-5PROP", "Propeller", "GEPRC", "Propellers", 640, 12, 2.45],
+  ["TM-F60P-2207", "T-Motor F60 Pro V 2207 Motor", "T-Motor", "Motors", 48, 1.2, 21],
+  ["CD-WALNUT-4K", "Caddx Walnut 4K Camera", "Caddx", "Cameras", 11, 0.8, 110],
+  ["CD-ANT-LITE", "Caddx Ant Lite Camera", "Caddx", "Cameras", 85, 1.5, 10],
+  ["IF-XING2-2207", "iFlight XING2 2207 Motor", "iFlight", "Motors", 120, 2, 17],
+  ["IF-BLITZ-E55", "iFlight BLITZ E55 ESC", "iFlight", "ESCs", 14, 0.3, 50],
+  ["FX-RAZER-MINI", "Foxeer Razer Mini Camera", "Foxeer", "Cameras", 26, 1.2, 19],
+  ["FX-LOLLI4", "Foxeer Lollipop 4 Antenna", "Foxeer", "Antennas", 210, 3, 3.1],
+  ["RM-BOXER-ELRS", "RadioMaster Boxer ELRS", "RadioMaster", "Radios", 3, 0.4, 139],
+  ["RM-RP1", "RadioMaster RP1 ELRS Receiver", "RadioMaster", "Receivers", 64, 1.1, 13],
+  ["HG-ZEUS-F722", "HGLRC Zeus F722 Flight Controller", "HGLRC", "Flight Controllers", 14, 0.6, 59],
+  ["BF-CETUS-X", "BetaFPV Cetus X Kit", "BetaFPV", "Kits", 12, 0.3, 132.5],
+  ["DJI-O4-AIR", "DJI O4 Air Unit", "DJI", "Digital FPV", 4, 1, 189],
+  ["SB-F405-V4", "SpeedyBee F405 V4 Stack", "SpeedyBee", "Flight Controllers", 9, 0.9, 51.5],
+  ["TBS-CRSF-NANO", "TBS Crossfire Nano RX", "Team BlackSheep", "Receivers", 58, 1, 23.9],
+  ["TBS-UNIFY-PRO32", "TBS Unify Pro32 VTX", "Team BlackSheep", "Video Transmitters", 37, 0.7, 27],
+  ["AX-VIMANA-2207", "Vimana 2207 Motor", "Axisflying", "Motors", 18, 1.5, 5.96],
+];
+
+// ─── Closed orders this year (history) ───────────────────────────────────────
+// Totals are spread so monthly spend follows the prototype's chart
+// (Jan $39K … Aug $66K) and brand totals follow its budget bars.
+
+/** brand, number of closed POs, share of the year's closed spend */
+const HISTORY_BRANDS: [string, number, number][] = [
+  ["GEPRC", 7, 104], ["DJI", 6, 85], ["iFlight", 5, 64], ["T-Motor", 4, 54], ["Caddx", 3, 47], ["RadioMaster", 3, 38],
+  ["Team BlackSheep", 2, 27], ["SpeedyBee", 2, 22], ["Foxeer", 1, 15], ["HGLRC", 1, 10], ["BetaFPV", 1, 12], ["Axisflying", 1, 12],
+];
+/** month (1–12), number of closed POs, spend target for those POs (USD) */
+const HISTORY_MONTHS: [number, number, number][] = [
+  [1, 4, 39_000], [2, 4, 46_000], [3, 4, 53_000], [4, 4, 48_000], [5, 5, 57_000], [6, 5, 51_000], [7, 5, 61_000], [8, 5, 50_000],
 ];
 
 // ─── Purchase orders ─────────────────────────────────────────────────────────
@@ -123,7 +147,7 @@ const POS: SeedPo[] = [
   { number: "FX-26095", supplier: "Foxeer", brand: "Foxeer", date: "2026-08-30", po: "CONFIRMED", pay: "PAID", prod: "COMPLETED", ship: "IN_TRANSIT", customs: "DOCUMENTS_REQUIRED", inv: "NOT_RECEIVED", eta: "2026-09-29", tl: 6, pct: 100, carrier: "FedEx", tracking: "7731 4402 9186", items: [["FX-RAZER-MINI", 150, 19], ["FX-LOLLI4", 300, 3.1]] },
   { number: "RC-26096", supplier: "RadioMaster", brand: "RadioMaster", date: "2026-09-10", po: "CONFIRMED", pay: "OVERDUE", balDue: "2026-09-20", prod: "DELAYED", ship: "NOT_SHIPPED", customs: "NOT_STARTED", inv: "NOT_RECEIVED", eta: "2026-10-15", tl: 4, pct: 40, carrier: "Aramex", items: [["RM-BOXER-ELRS", 60, 139], ["RM-RP1", 100, 13]] },
   { number: "HG-26097", supplier: "HGLRC", brand: "HGLRC", date: "2026-09-05", po: "CONFIRMED", pay: "PAID", prod: "COMPLETED", ship: "IN_TRANSIT", customs: "NOT_STARTED", inv: "NOT_RECEIVED", eta: "2026-10-02", tl: 6, pct: 100, carrier: "Aramex", tracking: "3390 1184 552", items: [["HG-ZEUS-F722", 50, 59]] },
-  { number: "BF-26098", supplier: "BetaFPV", brand: "BetaFPV", date: "2026-09-24", po: "SENT", pay: "PENDING", prod: "NOT_STARTED", ship: "NOT_SHIPPED", customs: "NOT_STARTED", inv: "NOT_RECEIVED", eta: "2026-10-20", tl: 1, pct: 0, carrier: "DHL Express", items: [["BF-CETUS-X", 40, 132.5]] },
+  { number: "BF-26098", supplier: "BetaFPV", brand: "BetaFPV", date: "2026-09-24", po: "SENT", pay: "PENDING", depDue: "2026-10-01", prod: "NOT_STARTED", ship: "NOT_SHIPPED", customs: "NOT_STARTED", inv: "NOT_RECEIVED", eta: "2026-10-20", tl: 1, pct: 0, carrier: "DHL Express", items: [["BF-CETUS-X", 40, 132.5]] },
   { number: "DJ-26099", supplier: "DJI", brand: "DJI", date: "2026-09-12", po: "CONFIRMED", pay: "PAID", prod: "COMPLETED", ship: "SHIPPED", customs: "NOT_STARTED", inv: "NOT_RECEIVED", eta: "2026-10-12", tl: 5, pct: 100, carrier: "Emirates SkyCargo", tracking: "AWB 176-48213095", items: [["DJI-O4-AIR", 100, 189]] },
   { number: "SP-26100", supplier: "SpeedyBee", brand: "SpeedyBee", date: "2026-09-15", po: "CONFIRMED", pay: "PAID", prod: "IN_PRODUCTION", ship: "NOT_SHIPPED", customs: "NOT_STARTED", inv: "NOT_RECEIVED", eta: "2026-10-09", tl: 4, pct: 70, carrier: "DHL Express", prodDue: "2026-09-30", items: [["SB-F405-V4", 80, 51.5]] },
   { number: "TB-26101", supplier: "TBS", brand: "Team BlackSheep", date: "2026-09-08", po: "CONFIRMED", pay: "PARTIALLY_PAID", balDue: "2026-10-03", prod: "READY", ship: "READY_TO_SHIP", customs: "NOT_STARTED", inv: "NOT_RECEIVED", eta: "2026-10-06", tl: 4, pct: 100, carrier: "DHL Express", items: [["TBS-CRSF-NANO", 200, 23.9], ["TBS-UNIFY-PRO32", 100, 27]] },
@@ -144,21 +168,6 @@ const CUSTOMS_DOCS: [CustomsDocumentType, string][] = [
   ["CERTIFICATE_OF_ORIGIN", "Certificate of origin"],
   ["IMPORT_DOCUMENTS", "Import documents"],
   ["CUSTOMS_DECLARATION", "Customs declaration"],
-];
-
-// ─── Notifications ───────────────────────────────────────────────────────────
-// tone, kind, title, detail, po, hours ago
-
-const NOTIFS: [NotificationTone, string, string, string, string, number][] = [
-  ["RED", "Delay", "PO #IF-26094 is delayed", "Production past expected date. Supplier to confirm revised date by Sep 29.", "IF-26094", 2],
-  ["RED", "Payment", "Payment for PO #RC-26096 is overdue", "Balance of $4,820 was due Sep 20. Supplier has paused production.", "RC-26096", 6],
-  ["RED", "Delay", "PO #AX-26088 is delayed", "Magnet supply delayed one week. 750 of 1,000 motors complete.", "AX-26088", 26],
-  ["ORANGE", "Payment", "Payment for PO #TM-26092 is due tomorrow", "Deposit of $2,100 due Sep 27.", "TM-26092", 3],
-  ["ORANGE", "Confirmation", "Supplier confirmation pending for PO #BF-26098", "PO sent Sep 24. No response yet.", "BF-26098", 4],
-  ["ORANGE", "Customs", "Customs documents required for PO #FX-26095", "Certificate of Origin missing. Shipment lands Sep 29.", "FX-26095", 5],
-  ["ORANGE", "Payment", "GEPRC balance due in 2 days", "Balance of $4,225 due Sep 28 before dispatch.", "GE-26091", 7],
-  ["BLUE", "Shipment", "Shipment #CD-26093 is arriving in 2 days", "DHL Express · 4829 1057 36", "CD-26093", 28],
-  ["BLUE", "Update", "GEPRC posted an update on PO #GE-26091", "Production expected to finish October 1.", "GE-26091", 30],
 ];
 
 // ─── Seed ────────────────────────────────────────────────────────────────────
@@ -182,12 +191,118 @@ async function wipe() {
   await db.user.deleteMany();
 }
 
+// ─── History ─────────────────────────────────────────────────────────────────
+
+interface SeedMaps {
+  suppliers: Map<string, { id: string; origin: string; terms: string }>;
+  brands: Map<string, string>;
+  products: Map<string, { id: string; name: string }>;
+  pm: string;
+}
+
+const BRAND_SUPPLIER: Record<string, string> = { "Team BlackSheep": "TBS" };
+
+async function seedHistory({ suppliers, brands, products, pm }: SeedMaps) {
+  // 1. Build the list of closed POs: brand + target value.
+  const totalTarget = HISTORY_MONTHS.reduce((s, m) => s + m[2], 0);
+  const weightSum = HISTORY_BRANDS.reduce((s, b) => s + b[2], 0);
+  const orders: { brand: string; target: number }[] = [];
+  for (const [brand, count, weight] of HISTORY_BRANDS) {
+    const brandTotal = (totalTarget * weight) / weightSum;
+    for (let i = 0; i < count; i++) orders.push({ brand, target: (brandTotal / count) * (0.85 + ((i * 7) % 5) * 0.075) });
+  }
+
+  // 2. Assign to months: biggest orders first, into the month with the most target left.
+  const months = HISTORY_MONTHS.map(([month, slots, target]) => ({ month, slots, left: target, orders: [] as typeof orders }));
+  for (const o of [...orders].sort((a, b) => b.target - a.target)) {
+    const m = months.filter((x) => x.orders.length < x.slots).sort((a, b) => b.left - a.left)[0];
+    m.orders.push(o);
+    m.left -= o.target;
+  }
+
+  // 3. Create them.
+  let seq = 25_001;
+  const perSupplier = new Map<string, number>();
+  for (const m of months) {
+    for (const [k, o] of m.orders.entries()) {
+      const supplierName = BRAND_SUPPLIER[o.brand] ?? o.brand;
+      const sup = suppliers.get(supplierName)!;
+      const sRow = SUPPLIERS.find((s) => s[0] === supplierName)!;
+      const [code, lead, onTimePct] = [sRow[1], sRow[11], sRow[12]];
+      const nth = perSupplier.get(supplierName) ?? 0;
+      perSupplier.set(supplierName, nth + 1);
+
+      const skus = PRODUCTS.filter((p) => p[2] === o.brand);
+      const lines = (skus.length > 1 && nth % 2 === 0 ? skus.slice(0, 2) : [skus[nth % skus.length]]).map((p, i, arr) => {
+        const share = arr.length > 1 ? (i === 0 ? 0.7 : 0.3) : 1;
+        return { sku: p[0], unitPrice: p[6], qty: Math.max(1, Math.round((o.target * share) / p[6] / 10) * 10) };
+      });
+      const total = poTotal(lines.map((l) => ({ qty: l.qty, unitPrice: l.unitPrice })));
+
+      const orderDate = `2026-${String(m.month).padStart(2, "0")}-${String(3 + k * 6).padStart(2, "0")}`;
+      const eta = addDays(orderDate, lead);
+      // Late in roughly (100 − on-time%) of this supplier's orders; at least one when below 90%.
+      const n = HISTORY_BRANDS.find((b) => b[0] === o.brand)![1];
+      const lateCount = Math.max(onTimePct < 90 ? 1 : 0, Math.round((n * (100 - onTimePct)) / 100));
+      const late = nth >= n - lateCount;
+      const arrived = addDays(eta, late ? 2 + (nth % 4) : -(nth % 2));
+      const shipDate = addDays(orderDate, Math.max(3, lead - 5));
+      const number = `${code}-${seq++}`;
+
+      const po = await db.purchaseOrder.create({
+        data: {
+          number, supplierId: sup.id, brandId: brands.get(o.brand)!, orderDate: D(orderDate), paymentTerms: sup.terms,
+          incoterm: sRow[9], plannedCarrier: "DHL Express", expectedProductionDate: D(addDays(shipDate, -2)), expectedShipDate: D(shipDate),
+          eta: D(eta), productionStartedAt: D(addDays(orderDate, 2)), productionCompletedAt: D(addDays(shipDate, -1)), productionProgressPct: 100,
+          productionNote: "Goods completed and quality-checked by supplier.", sentAt: D(orderDate), confirmedAt: D(addDays(orderDate, 1)),
+          closedAt: D(addDays(arrived, 2)), poStatus: "CLOSED", paymentStatus: "PAID", productionStatus: "COMPLETED", shipmentStatus: "DELIVERED",
+          customsStatus: "CLEARED", inventoryStatus: "STOCKED", createdById: pm, createdAt: D(orderDate),
+          items: { create: lines.map((l) => ({ productId: products.get(l.sku)!.id, qtyOrdered: l.qty, qtyReceived: l.qty, unitPrice: l.unitPrice })) },
+        },
+      });
+      for (const [i, p] of defaultSchedule(sup.terms, total, orderDate, shipDate, addDays).entries()) {
+        await db.payment.create({
+          data: { poId: po.id, type: p.type, amount: p.amount, dueDate: D(p.dueDate), paidDate: D(p.dueDate), method: "Bank transfer (TT)", bankReference: `ENBD-${number.replace("-", "")}-${i + 1}` },
+        });
+      }
+      const shipment = await db.shipment.create({
+        data: {
+          poId: po.id, carrier: "DHL Express", trackingNumber: `${1000 + seq} ${String(seq * 7919).slice(0, 4)} ${String(seq).slice(-2)}`, origin: sup.origin,
+          shipDate: D(shipDate), eta: D(eta), actualArrival: D(arrived), shippingCost: Math.round(total * 0.045), milestone: "DELIVERED",
+        },
+      });
+      const span = Math.max(1, daysBetween(shipDate, arrived));
+      for (const [i, milestone] of MILESTONES.entries()) {
+        await db.shipmentMilestoneEvent.create({ data: { shipmentId: shipment.id, milestone, occurredAt: D(addDays(shipDate, Math.round((span * i) / 5))) } });
+      }
+      for (const [type] of CUSTOMS_DOCS) await db.customsDocument.create({ data: { shipmentId: shipment.id, type, status: "RECEIVED" } });
+      const cc = customsCosts(total);
+      await db.customsCost.create({
+        data: { shipmentId: shipment.id, duty: Math.round(cc.duty), importVat: Math.round(cc.importVat), clearanceCharges: cc.clearanceCharges },
+      });
+      for (const [type, fileName, date] of [
+        ["PURCHASE_ORDER", `${number.toLowerCase()}.pdf`, orderDate],
+        ["COMMERCIAL_INVOICE", `CI-${number}.pdf`, shipDate],
+      ] as const) {
+        await db.document.create({
+          data: { poId: po.id, supplierId: sup.id, shipmentId: type === "COMMERCIAL_INVOICE" ? shipment.id : undefined, type, fileName, storageKey: `seed/${number}/${fileName}`, mimeType: "application/pdf", uploadedById: pm, createdAt: D(date) },
+        });
+      }
+      await db.activityLog.createMany({
+        data: [
+          { poId: po.id, userId: pm, actorLabel: "Rashid Khan", kind: "NOTE", text: `Purchase order sent to ${supplierName}.`, createdAt: D(orderDate) },
+          { poId: po.id, userId: users.get("WAREHOUSE"), actorLabel: "Omar Haddad", kind: "STATUS_CHANGE", text: "All items received and stocked. PO closed.", createdAt: D(addDays(arrived, 2)) },
+        ],
+      });
+    }
+  }
+}
+
 async function main() {
   await wipe();
 
   const password = process.env.SEED_PASSWORD || "procurement";
   const passwordHash = await bcrypt.hash(password, 10);
-  const users = new Map<Role, string>();
   for (const [name, email, role] of USERS) {
     const u = await db.user.create({ data: { name, email, role, passwordHash } });
     users.set(role, u.id);
@@ -195,9 +310,9 @@ async function main() {
   const pm = users.get("PROCUREMENT_MANAGER")!;
 
   const suppliers = new Map<string, { id: string; origin: string; terms: string }>();
-  for (const [name, code, city, country, contactName, email, phone, website, paymentTerms, incoterm, incotermPlace, leadTimeDays, onTime] of SUPPLIERS) {
+  for (const [name, code, city, country, contactName, email, phone, website, paymentTerms, incoterm, incotermPlace] of SUPPLIERS) {
     const s = await db.supplier.create({
-      data: { name, code, city, country, contactName, email, phone, website, paymentTerms, incoterm, incotermPlace, leadTimeDays, onTimeRate: onTime },
+      data: { name, code, city, country, contactName, email, phone, website, paymentTerms, incoterm, incotermPlace },
     });
     suppliers.set(name, { id: s.id, origin: city === country ? city : `${city}, ${country}`, terms: paymentTerms });
   }
@@ -214,6 +329,8 @@ async function main() {
     const p = await db.product.create({ data: { sku, name, brandId: brands.get(brand)!, category, stockQty, dailySalesRate } });
     products.set(sku, { id: p.id, name });
   }
+
+  await seedHistory({ suppliers, brands, products, pm });
 
   for (const p of POS) {
     const sup = suppliers.get(p.supplier)!;
@@ -242,21 +359,6 @@ async function main() {
       : p.customs === "CLEARED" ? ["RECEIVED", "RECEIVED", "RECEIVED", "RECEIVED", "RECEIVED"]
       : reached >= 2 ? ["RECEIVED", "RECEIVED", "PENDING", "PENDING", "PENDING"]
       : ["PENDING", "PENDING", "PENDING", "PENDING", "PENDING"];
-    const missingIdx = ck.indexOf("MISSING");
-
-    const { health, reason } = computeHealth(
-      {
-        poStatus: p.po,
-        paymentStatus: p.pay,
-        productionStatus: p.prod,
-        customsStatus: p.customs,
-        eta: p.eta,
-        overdueSince: p.pay === "OVERDUE" ? balDue : null,
-        nextDueDate: p.pay === "PARTIALLY_PAID" ? balDue : p.pay === "PENDING" ? depDue : null,
-        missingCustomsDoc: missingIdx >= 0 ? CUSTOMS_DOCS[missingIdx][1] : null,
-      },
-      TODAY,
-    );
 
     const po = await db.purchaseOrder.create({
       data: {
@@ -287,8 +389,6 @@ async function main() {
         shipmentStatus: p.ship,
         customsStatus: p.customs,
         inventoryStatus: p.inv,
-        health,
-        healthReason: reason,
         createdById: pm,
         createdAt: D(p.date),
         items: {
@@ -372,19 +472,29 @@ async function main() {
     }
   }
 
-  const poIds = new Map((await db.purchaseOrder.findMany({ select: { id: true, number: true } })).map((p) => [p.number, p.id]));
-  const now = new Date(D(TODAY).getTime() + 12 * 3_600_000); // Sep 26, 12:00 UTC
-  for (const [tone, kind, title, detail, number, hoursAgo] of NOTIFS) {
-    await db.notification.create({
-      data: {
-        tone, kind, title, detail, poId: poIds.get(number),
-        dedupeKey: `seed:${kind}:${number}:${title}`,
-        createdAt: new Date(now.getTime() - hoursAgo * 3_600_000),
-      },
-    });
+  // Derived fields and notifications come from the same code the app uses.
+  const today = REAL_TODAY;
+  const now = new Date();
+  for (const { id } of await db.purchaseOrder.findMany({ select: { id: true } })) await recalcPo(db, id, today);
+  for (const { id } of suppliers.values()) await refreshSupplierStats(db, id);
+  const { created } = await syncNotifications(db, today, now);
+  // Spread the rule notifications over the last few hours so the list reads naturally.
+  const rows = await db.notification.findMany({ orderBy: [{ tone: "asc" }, { title: "asc" }], select: { id: true } });
+  for (const [i, { id }] of rows.entries()) {
+    await db.notification.update({ where: { id }, data: { createdAt: new Date(now.getTime() - (i + 1) * 47 * 60_000) } });
   }
+  // A supplier update (event, not a rule).
+  const ge = await db.purchaseOrder.findUniqueOrThrow({ where: { number: "GE-26091" } });
+  await db.notification.create({
+    data: {
+      tone: "BLUE", kind: "Update", title: "GEPRC posted an update on PO #GE-26091", detail: "Production expected to finish October 1.",
+      poId: ge.id, dedupeKey: "seed:update:GE-26091", createdAt: new Date(D("2026-09-25").getTime() + 10 * 3_600_000),
+    },
+  });
 
-  console.log(`Seeded ${USERS.length} users, ${SUPPLIERS.length} suppliers, ${PRODUCTS.length} products, ${POS.length} purchase orders.`);
+  const closed = HISTORY_BRANDS.reduce((n, b) => n + b[1], 0);
+  console.log(`Seeded ${USERS.length} users, ${SUPPLIERS.length} suppliers, ${PRODUCTS.length} products, ${POS.length} open + ${closed} closed purchase orders, ${created + 1} notifications.`);
+  if (SHIFT) console.log(`Sample dates shifted by ${SHIFT} days to match today (${REAL_TODAY}).`);
   console.log(`Sign in with any seeded email (e.g. rashid.khan@fpvstore.ae) and password "${password}".`);
 }
 
