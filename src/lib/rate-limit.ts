@@ -1,20 +1,22 @@
-// Small in-memory sliding-window limiter. Fine for a single local server process.
+// In-memory failure counter with a sliding window. Fine for a single local server process.
+// Only failures count, so busy offices sharing one address are never locked out by normal use.
 
 const buckets = new Map<string, number[]>();
 
-export function rateLimit(key: string, limit: number, windowMs: number): { ok: boolean; retryAfterMs: number } {
+function recent(key: string, windowMs: number) {
   const now = Date.now();
   const hits = (buckets.get(key) ?? []).filter((t) => now - t < windowMs);
-  if (hits.length >= limit) {
-    buckets.set(key, hits);
-    return { ok: false, retryAfterMs: windowMs - (now - hits[0]) };
-  }
-  hits.push(now);
   buckets.set(key, hits);
-  if (buckets.size > 10_000) {
-    for (const [k, v] of buckets) if (!v.some((t) => now - t < windowMs)) buckets.delete(k);
-  }
-  return { ok: true, retryAfterMs: 0 };
+  return hits;
+}
+
+export function isLimited(key: string, limit: number, windowMs: number): boolean {
+  return recent(key, windowMs).length >= limit;
+}
+
+export function recordFailure(key: string, windowMs: number) {
+  recent(key, windowMs).push(Date.now());
+  if (buckets.size > 10_000) for (const k of buckets.keys()) if (!recent(k, windowMs).length) buckets.delete(k);
 }
 
 export function resetLimit(key: string) {

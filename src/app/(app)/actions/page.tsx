@@ -66,14 +66,14 @@ export default async function ActionsPage({ searchParams }: PageProps<"/actions"
       </div>
       <div className="flex flex-col">
         {items.map((n) => (
-          <div key={n.id} className={`grid grid-cols-[6px_minmax(0,1fr)] gap-4 border-b border-neutral-200 py-3.5 sm:grid-cols-[6px_minmax(0,1fr)_auto] ${n.resolvedAt ? "opacity-55" : ""}`}>
+          <div key={n.id} data-testid="notification" className={`grid grid-cols-[6px_minmax(0,1fr)] gap-4 border-b border-neutral-200 py-3.5 sm:grid-cols-[6px_minmax(0,1fr)_auto] ${n.resolvedAt ? "opacity-55" : ""}`}>
             <span className={BAR[n.tone]} />
             <div className="flex flex-col gap-0.5">
               <span className="text-[12.5px] text-secondary">
                 {n.kind} · {relativeTime(n.createdAt)}
                 {n.resolvedAt && ` · resolved ${relativeTime(n.resolvedAt)}`}
               </span>
-              <span className="text-[17px] font-semibold">{n.title}</span>
+              <span data-testid="notification-title" className="text-[17px] font-semibold">{n.title}</span>
               {n.detail && <span className="text-sm text-neutral-800">{n.detail}</span>}
             </div>
             <div className="col-start-2 flex items-center gap-2 sm:col-start-auto">

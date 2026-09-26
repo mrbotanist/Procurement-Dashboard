@@ -11,6 +11,8 @@ export interface CalendarEvent {
   title: string;
   type: EventType;
   poNumber: string;
+  /** Already happened (paid, dispatched, arrived) rather than due. */
+  done?: boolean;
 }
 
 export interface CalendarPoInput {
@@ -31,7 +33,7 @@ export function calendarEvents(po: CalendarPoInput): CalendarEvent[] {
   const ev: CalendarEvent[] = [];
   const s = po.supplier;
   for (const p of po.payments) {
-    if (p.paidDate) ev.push({ date: p.paidDate, title: `${s} ${payName(p.type)} paid`, type: "Payment", poNumber: po.number });
+    if (p.paidDate) ev.push({ date: p.paidDate, title: `${s} ${payName(p.type)} paid`, type: "Payment", poNumber: po.number, done: true });
     else ev.push({ date: p.dueDate, title: `${s} ${payName(p.type)} due`, type: "Payment", poNumber: po.number });
   }
   if (po.expectedProductionDate && !po.productionDone) {
@@ -39,9 +41,9 @@ export function calendarEvents(po: CalendarPoInput): CalendarEvent[] {
   }
   let arrival = po.eta;
   for (const sh of po.shipments) {
-    if (sh.shipDate) ev.push({ date: sh.shipDate, title: `${s} shipment dispatched`, type: "Shipment", poNumber: po.number });
+    if (sh.shipDate) ev.push({ date: sh.shipDate, title: `${s} shipment dispatched`, type: "Shipment", poNumber: po.number, done: true });
     if (sh.actualArrival) {
-      ev.push({ date: sh.actualArrival, title: `${s} shipment arrived`, type: "Arrival", poNumber: po.number });
+      ev.push({ date: sh.actualArrival, title: `${s} shipment arrived`, type: "Arrival", poNumber: po.number, done: true });
       arrival = null;
     } else if (sh.eta) arrival = sh.eta;
   }

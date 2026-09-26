@@ -3,7 +3,9 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { rateLimit, resetLimit } from "@/lib/rate-limit";
+import { isLimited, recordFailure, resetLimit } from "@/lib/rate-limit";
+
+const WINDOW = 15 * 60_000;
 
 export class TooManyAttempts extends CredentialsSignin {
   code = "rate_limited";
@@ -26,18 +28,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       credentials: { email: {}, password: {} },
-      async authorize(raw, request) {
+      async authorize(raw) {
         const parsed = credentialsSchema.safeParse(raw);
         if (!parsed.success) return null;
-        // 5 attempts per email and 20 per IP address every 15 minutes.
-        const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-        const byEmail = rateLimit(`login:${parsed.data.email}`, 5, 15 * 60_000);
-        const byIp = rateLimit(`login-ip:${ip}`, 20, 15 * 60_000);
-        if (!byEmail.ok || !byIp.ok) throw new TooManyAttempts();
+        // After 5 failed attempts for an email, block it for 15 minutes.
+        const key = `login:${parsed.data.email}`;
+        if (isLimited(key, 5, WINDOW)) throw new TooManyAttempts();
         const user = await db.user.findUnique({ where: { email: parsed.data.email } });
-        if (!user || !user.active) return null;
-        if (!(await bcrypt.compare(parsed.data.password, user.passwordHash))) return null;
-        resetLimit(`login:${parsed.data.email}`);
+        if (!user || !user.active || !(await bcrypt.compare(parsed.data.password, user.passwordHash))) {
+          recordFailure(key, WINDOW);
+          return null;
+        }
+        resetLimit(key);
         return { id: user.id, name: user.name, email: user.email, role: user.role };
       },
     }),

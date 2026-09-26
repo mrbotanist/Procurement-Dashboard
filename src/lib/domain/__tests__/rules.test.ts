@@ -324,6 +324,6 @@ describe("calendar events", () => {
       number: "A", supplier: "S", expectedProductionDate: null, productionDone: true, eta: "2026-09-10", customsStatus: "CLEARED", missingCustomsDoc: null,
       payments: [], shipments: [{ shipDate: null, eta: "2026-09-10", actualArrival: "2026-09-12" }],
     });
-    expect(ev).toEqual([{ date: "2026-09-12", title: "S shipment arrived", type: "Arrival", poNumber: "A" }]);
+    expect(ev).toEqual([{ date: "2026-09-12", title: "S shipment arrived", type: "Arrival", poNumber: "A", done: true }]);
   });
 });

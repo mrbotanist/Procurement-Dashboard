@@ -130,7 +130,7 @@ export async function dashboard(today: IsoDate, range: string | undefined) {
   const [all, inventory, events, budgets, spend] = await Promise.all([
     poSummaries({ OR: [{ orderDate: yearRange(year) }, { poStatus: { notIn: ["CLOSED", "CANCELLED"] } }, { orderDate: { gte: new Date(r.from + "T00:00:00Z") } }] }, today),
     inventoryRows(today),
-    eventsBetween(today, addDays(today, 10)),
+    eventsBetween(today, addDays(today, 10)).then((e) => e.filter((x) => !x.done)),
     db.brandBudget.findMany({ where: { year }, include: { brand: true } }),
     brandSpend(year, today),
   ]);

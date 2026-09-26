@@ -26,11 +26,15 @@ test("upload a document to a PO and download it", async ({ page }) => {
 test("resolve and reopen a notification", async ({ page }) => {
   await login(page, "rashid.khan@fpvstore.ae");
   await page.goto("/actions?tab=updates");
-  const first = page.getByRole("button", { name: "Resolve", exact: true }).first();
-  await first.click();
+  const title = (await page.getByTestId("notification-title").first().textContent())!;
+  const row = () => page.getByTestId("notification").filter({ has: page.getByTestId("notification-title").getByText(title, { exact: true }) });
+  await row().first().getByRole("button", { name: "Resolve", exact: true }).click();
+  await expect(row()).toHaveCount(0);
   await page.goto("/actions?tab=resolved");
-  await page.getByRole("button", { name: "Reopen" }).first().click();
-  await expect(page.getByText("Nothing here.")).toBeVisible();
+  await row().first().getByRole("button", { name: "Reopen" }).click();
+  await expect(row()).toHaveCount(0);
+  await page.goto("/actions?tab=updates");
+  await expect(row()).toHaveCount(1);
 });
 
 test("admin adds a user who can then sign in", async ({ page }) => {
