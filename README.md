@@ -15,8 +15,7 @@ It runs on your own computer. The app, the database and uploaded files all stay 
 
 ```bash
 npm install
-cp .env.example .env          # Windows: copy .env.example .env
-npx auth secret               # writes AUTH_SECRET into .env.local; or paste any long random string into AUTH_SECRET in .env
+npm run setup                 # creates .env with a random AUTH_SECRET
 docker compose up -d          # starts PostgreSQL (skip if you installed it yourself)
 npm run db:deploy             # creates the tables
 npm run db:seed               # loads the sample data
