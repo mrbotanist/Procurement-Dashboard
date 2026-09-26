@@ -6,68 +6,128 @@ It runs on your own computer. The app, the database and uploaded files all stay 
 
 ## What you need
 
-- **Node.js 22** (or 20.19+): https://nodejs.org
-- **PostgreSQL 16**, either:
-  - **Docker Desktop** (easiest): https://www.docker.com/products/docker-desktop, then use the included `docker-compose.yml`, or
-  - a normal PostgreSQL install (https://www.postgresql.org/download/). Create a user `fpv` with password `fpv` and a database `fpv_procurement`, or change `DATABASE_URL` in `.env` to match yours.
+- **Node.js 22 LTS**: https://nodejs.org
+- **Git**: https://git-scm.com (only needed to download and update the app)
+- **Docker Desktop**: https://www.docker.com/products/docker-desktop — runs the PostgreSQL database. It must be open whenever you use the app.
+  (Alternatively install PostgreSQL 16 yourself and set `DATABASE_URL` in `.env`.)
 
 ## First-time setup
 
-```bash
+### Windows (easiest)
+
+1. `git clone https://github.com/mrbotanist/Procurement-Dashboard.git`
+2. Open Docker Desktop and wait until it says it is running.
+3. In the `Procurement-Dashboard` folder, double-click **`setup-windows.bat`**.
+4. Double-click **`start-windows.bat`** and open http://localhost:3000.
+
+If PowerShell says *running scripts is disabled*, run once: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
+
+### Any system (commands, one at a time)
+
+```
 npm install
-npm run setup                 # creates .env with a random AUTH_SECRET
-docker compose up -d          # starts PostgreSQL (skip if you installed it yourself)
-npm run db:deploy             # creates the tables
-npm run db:seed               # loads the sample data
-```
-
-## Running it
-
-```bash
+npm run setup          # creates .env with a random AUTH_SECRET
+docker compose up -d   # starts PostgreSQL
+npm run db:deploy      # creates the tables
+npm run db:seed        # loads the sample data (first time only!)
 npm run build
-npm start                     # http://localhost:3000
+npm start              # http://localhost:3000
 ```
 
-For development with live reload use `npm run dev` instead.
+## Every day
 
-To open it from other devices on the same Wi-Fi/office network, find this computer's local IP address (for example `192.168.1.20`) and browse to `http://192.168.1.20:3000`. Keep it on your local network; don't expose that port to the internet.
+- Windows: open Docker Desktop, then double-click `start-windows.bat`. Keep its window open; press Ctrl+C there to stop.
+- Otherwise: `docker compose up -d` then `npm start`.
+
+Other devices on the same Wi-Fi can use it at `http://<this computer's IP>:3000` (for example `http://192.168.1.20:3000`). Don't expose port 3000 to the internet.
+
+## Updating to a new version
+
+Stop the app, then double-click `update-windows.bat`, or run:
+
+```
+git pull
+npm install
+npm run db:deploy
+npm run build
+```
 
 ## Sample accounts
 
-`npm run db:seed` creates one user per role. The password for all of them is `procurement` (set `SEED_PASSWORD` in `.env` before seeding to change it).
+`npm run db:seed` creates one user per role, all with the password `procurement`:
 
-| Email | Role |
-|---|---|
-| admin@fpvstore.ae | Admin |
-| rashid.khan@fpvstore.ae | Procurement Manager |
-| finance@fpvstore.ae | Finance |
-| warehouse@fpvstore.ae | Warehouse |
-| management@fpvstore.ae | Management |
+| Email | Role | Can |
+|---|---|---|
+| admin@fpvstore.ae | Admin | everything, users, budgets |
+| rashid.khan@fpvstore.ae | Procurement Manager | POs, suppliers, products, payments, shipments, documents |
+| finance@fpvstore.ae | Finance | view all, record payments |
+| warehouse@fpvstore.ae | Warehouse | view POs/shipments, receive goods, stock counts |
+| management@fpvstore.ae | Management | read-only, analytics |
 
-`npm run db:seed` **wipes all data** and reloads the samples. Don't run it once you have real data.
+Before real use: sign in as admin, open **Settings**, add your team, and deactivate the sample users (or change their passwords via **My account** — click your name in the sidebar).
+
+**`npm run db:seed` wipes all data.** Only run it on a fresh install.
+
+## Starting with your own data
+
+Either create suppliers, products and POs in the app, or import them from Excel/CSV:
+
+```
+npm run import -- suppliers  my-suppliers.xlsx
+npm run import -- products   my-products.xlsx
+npm run import -- pos        my-open-orders.xlsx
+```
+
+Templates and column descriptions are in [`import-templates/`](import-templates/README.md). Add `--dry-run` to check a file first.
+
+To start from an **empty database** instead of the samples (this deletes everything):
+
+```
+npm run db:fresh
+npm run create-admin -- --email you@yourstore.ae --name "Your Name" --password "a long password"
+```
+
+Then sign in, add your team under Settings, set brand budgets, and import or create suppliers and products.
+
+## What runs automatically
+
+- **Daily check** at 00:05 (Asia/Dubai) and a few seconds after the app starts: marks overdue payments and late production, recalculates every order's health, creates notifications (delayed, overdue, due tomorrow, unconfirmed after 48 h, customs documents missing, arriving within 2 days) and clears ones that no longer apply. Run it by hand with `npm run jobs:daily`.
+- **Email digest** (optional): set `SMTP_URL` in `.env` to email open critical/attention items to admins, managers, finance and management each night.
+- **Error log**: server errors are written to `logs/errors.log`.
 
 ## Backups
 
-Your data lives in PostgreSQL (and uploaded files in `./storage` once uploads exist). Back up the database with:
+Everything important is in the database and the `storage/` folder (uploaded files).
 
-```bash
-docker compose exec postgres pg_dump -U fpv fpv_procurement > backup-$(date +%F).sql
+```
+docker compose exec postgres pg_dump -U fpv fpv_procurement > backup.sql
 ```
 
-Restore into an empty database with `psql -U fpv fpv_procurement < backup-YYYY-MM-DD.sql`.
+Copy `backup.sql` and the `storage/` folder somewhere safe (another drive or cloud folder), ideally daily. Restore into an empty database with:
 
-## Other commands
+```
+docker compose exec -T postgres psql -U fpv fpv_procurement < backup.sql
+```
+
+## Troubleshooting
+
+| Message | Fix |
+|---|---|
+| Can't reach database server | Docker Desktop isn't running. Open it, then `docker compose up -d`. |
+| port 5432 is already in use | Another PostgreSQL is running. Stop it, or change the port in `docker-compose.yml` and `DATABASE_URL`. |
+| port 3000 is already in use | `PORT=3001 npm start` (PowerShell: `$env:PORT=3001; npm start`). |
+| Too many sign-in attempts | Wait 15 minutes, or restart the app. |
+| Something went wrong | Check `logs/errors.log` and the terminal window. |
+
+## For developers
 
 | Command | What it does |
 |---|---|
 | `npm run dev` | Development server with live reload |
-| `npm test` | Unit tests (Vitest) |
+| `npm test` | Unit tests for the business rules (Vitest) |
+| `npm run test:e2e` | Browser tests (Playwright; needs a seeded database, reseed afterwards) |
 | `npm run lint` / `npm run typecheck` | Code checks |
-| `npm run db:migrate` | Create/apply a migration after changing `prisma/schema.prisma` (development) |
-| `npm run db:deploy` | Apply existing migrations (use after pulling updates) |
-| `npm run db:studio` | Browse the database in the browser |
+| `npm run db:migrate -- --name x` | New migration after editing `prisma/schema.prisma` |
+| `npm run db:studio` | Browse the database |
 
-## Project docs
-
-- `CLAUDE.md`: stack, conventions, business rules and folder layout.
-- `design/`: the design handoff (spec, build plan, HTML prototype).
+`CLAUDE.md` describes the stack, conventions, business rules and folder layout. `design/` holds the original design handoff and HTML prototype.

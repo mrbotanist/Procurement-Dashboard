@@ -9,10 +9,9 @@ export async function register() {
 /** Local error log (stands in for a hosted error tracker): ./logs/errors.log */
 export const onRequestError: Instrumentation.onRequestError = async (err, request, context) => {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
-  const { appendFile, mkdir } = await import("node:fs/promises");
   const e = err as Error & { digest?: string };
-  const line = JSON.stringify({
-    at: new Date().toISOString(),
+  const { logServerError } = await import("./server/error-log");
+  await logServerError({
     message: e?.message ?? String(err),
     digest: e?.digest,
     stack: e?.stack?.split("\n").slice(0, 8).join("\n"),
@@ -21,8 +20,4 @@ export const onRequestError: Instrumentation.onRequestError = async (err, reques
     route: context.routePath,
     kind: context.routeType,
   });
-  try {
-    await mkdir("logs", { recursive: true });
-    await appendFile("logs/errors.log", line + "\n");
-  } catch {}
 };

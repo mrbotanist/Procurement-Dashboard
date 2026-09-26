@@ -22,7 +22,7 @@ const ALLOWED: Record<string, string> = {
   txt: "text/plain",
 };
 
-const root = () => path.resolve(process.env.STORAGE_DIR || "./storage");
+const root = () => path.resolve(/*turbopackIgnore: true*/ process.env.STORAGE_DIR || "./storage");
 
 export class StorageError extends Error {}
 
@@ -45,8 +45,8 @@ export async function saveUpload(file: File, folder: string) {
   const now = new Date();
   const key = path.posix.join(folder.replace(/[^\w-]/g, "_"), `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`, `${randomUUID()}-${safeName(file.name)}`);
   const full = path.join(root(), key);
-  await mkdir(path.dirname(full), { recursive: true });
-  await writeFile(full, Buffer.from(await file.arrayBuffer()));
+  await mkdir(/*turbopackIgnore: true*/ path.dirname(full), { recursive: true });
+  await writeFile(/*turbopackIgnore: true*/ full, Buffer.from(await file.arrayBuffer()));
   return { storageKey: key, size: file.size, mimeType, fileName: safeName(file.name) };
 }
 
@@ -56,7 +56,7 @@ export async function readStored(key: string, fileName: string): Promise<{ body:
   if (!full.startsWith(root() + path.sep)) return null; // path traversal guard
   try {
     const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
-    return { body: await readFile(full), mimeType: ALLOWED[ext] ?? "application/octet-stream" };
+    return { body: await readFile(/*turbopackIgnore: true*/ full), mimeType: ALLOWED[ext] ?? "application/octet-stream" };
   } catch {
     if (key.startsWith("seed/")) return { body: placeholderPdf(fileName), mimeType: "application/pdf" };
     return null;

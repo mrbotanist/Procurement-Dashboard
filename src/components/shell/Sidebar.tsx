@@ -95,10 +95,10 @@ export function Sidebar({ nav, counts, user, collapsed, onNavigate }: Props) {
         </div>
         {!collapsed && (
           <>
-            <div className="flex min-w-0 flex-1 flex-col leading-tight">
+            <Link href="/account" onClick={onNavigate} title="My account" className="flex min-w-0 flex-1 flex-col leading-tight hover:underline">
               <span className="truncate text-[13px] font-semibold">{user.name}</span>
               <span className="truncate text-xs text-secondary">{user.roleLabel}</span>
-            </div>
+            </Link>
             <form action={signOutAction}>
               <button type="submit" className="btn btn-ghost p-1! text-xs">
                 Sign out

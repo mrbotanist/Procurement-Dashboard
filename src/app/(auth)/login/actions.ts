@@ -25,7 +25,10 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
     return {};
   } catch (e) {
     // signIn signals success by throwing a redirect; let that through.
-    if (e instanceof AuthError) return { error: "Email or password is incorrect.", email };
+    if (e instanceof AuthError) {
+      const limited = (e as AuthError & { code?: string }).code === "rate_limited";
+      return { error: limited ? "Too many sign-in attempts. Wait 15 minutes and try again." : "Email or password is incorrect.", email };
+    }
     throw e;
   }
 }

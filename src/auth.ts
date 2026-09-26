@@ -1,8 +1,13 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { rateLimit, resetLimit } from "@/lib/rate-limit";
+
+export class TooManyAttempts extends CredentialsSignin {
+  code = "rate_limited";
+}
 
 const credentialsSchema = z.object({
   email: z.email().transform((e) => e.toLowerCase().trim()),
@@ -21,12 +26,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       credentials: { email: {}, password: {} },
-      async authorize(raw) {
+      async authorize(raw, request) {
         const parsed = credentialsSchema.safeParse(raw);
         if (!parsed.success) return null;
+        // 5 attempts per email and 20 per IP address every 15 minutes.
+        const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+        const byEmail = rateLimit(`login:${parsed.data.email}`, 5, 15 * 60_000);
+        const byIp = rateLimit(`login-ip:${ip}`, 20, 15 * 60_000);
+        if (!byEmail.ok || !byIp.ok) throw new TooManyAttempts();
         const user = await db.user.findUnique({ where: { email: parsed.data.email } });
         if (!user || !user.active) return null;
         if (!(await bcrypt.compare(parsed.data.password, user.passwordHash))) return null;
+        resetLimit(`login:${parsed.data.email}`);
         return { id: user.id, name: user.name, email: user.email, role: user.role };
       },
     }),

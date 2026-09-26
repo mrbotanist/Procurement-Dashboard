@@ -28,17 +28,20 @@ Product promise: **"One place to know exactly where every purchase stands."**
 
 ## Hosting: local machine
 
-The app is hosted **locally** for now (no cloud server). Build for that:
+The app is hosted **locally** (no cloud server):
 - Database: PostgreSQL via `docker-compose.yml` or a native install. `DATABASE_URL` in `.env`.
-- Files: uploads go to local disk under `STORAGE_DIR` (default `./storage`, git-ignored) behind a small storage interface (`src/lib/storage.ts`, step 5), so S3/R2 can be swapped in later. Serve downloads through an authenticated route, never from `public/`.
-- Jobs: the daily health/notification job runs in-process with `node-cron`, started from `src/instrumentation.ts` (step 7), plus an `npm` script to run it by hand. Also recalc on app start in case the machine was off at the scheduled time.
-- Email: none for now; notifications are in-app. Keep the digest behind an optional SMTP setting.
+- Files: `src/lib/storage.ts` saves uploads under `STORAGE_DIR` (default `./storage`, git-ignored); downloads go through the authenticated `/api/documents/[id]` route. Seed documents have no file; the route serves a generated placeholder PDF for `seed/` keys. Swap the three storage functions for S3/R2 later.
+- Jobs: `src/instrumentation.ts` starts `server/jobs/scheduler.ts` (node-cron, 00:05 `APP_TIMEZONE`, plus one run 15 s after start). `npm run jobs:daily` runs it by hand. `DISABLE_JOBS=1` turns it off.
+- Email: optional nightly digest when `SMTP_URL` is set (`server/jobs/digest.ts`).
+- Errors: `onRequestError` appends to `logs/errors.log` (stand-in for Sentry).
+- Windows helpers: `setup-windows.bat`, `start-windows.bat`, `update-windows.bat`.
 - Runs with `npm run build && npm start` on port 3000; `AUTH_TRUST_HOST=true` is required outside Vercel.
 
 ## Conventions
 
 - **Domain logic lives in `src/lib/domain/` as pure functions.** No Prisma, no `Date.now()` inside: pass `today` in. UI and API call these; never re-implement a rule in a component.
-- **Every mutation** goes through a service in `src/server/services/` that: validates with Zod, checks role permission, writes the change, writes `ActivityLog` (who, what, when, before/after), and recalculates PO health. Do all of that in one Prisma transaction.
+- **Every mutation** goes through a `"use server"` service in `src/server/services/` built on `runService()` (`services/base.ts`): permission check → Zod validation → one Prisma transaction that writes the change, `logActivity()` (who, what, before/after) and, for POs, `afterChange()` (= `recalcPo` + `syncNotifications`). Services return `ActionResult`; forms use `ServiceForm` (`components/ui/Form.tsx`), one-click actions use `ActionButton`.
+- Read models live in `src/server/queries/` (`poSummaries()` is the shared normalized PO row). `src/server/recalc.ts` and `src/server/jobs/*` take a `Db` argument and don't import `server-only`, so seed/scripts can reuse them.
 - Store money as `Decimal` in the DB. Format only at the edge (`src/lib/format.ts`: `usd`, `usdR`, `usdK`, `fmt` "Sep 28").
 - Dates: store `DateTime` in UTC; treat business dates (due dates, ETAs) as date-only values in Asia/Dubai.
 - Status enums in the DB are SCREAMING_SNAKE (`PARTIALLY_PAID`). Map to display labels ("Partially Paid") and tones in one place (`src/lib/status.ts`).
@@ -112,57 +115,51 @@ Recalculate on every PO/payment/shipment mutation **and** in the daily cron. The
 
 ```
 design/                      handoff: spec, build prompts, HTML prototype (reference only)
-prisma/
-  schema.prisma
-  migrations/
-  seed.ts                    ported from design/prototype/fpv-data-v2.js
+prisma/                      schema.prisma, migrations/, seed.ts (sample data, dates shifted to today)
+scripts/                     setup-env.mjs, run-daily-job.ts, import.ts, create-admin.ts
+import-templates/            CSV templates for npm run import
+tests/e2e/                   Playwright flows
 src/
   app/
-    (auth)/login/            login page
-    (app)/                   authenticated shell: sidebar + header
-      layout.tsx
+    (auth)/login/            login page + action
+    (app)/                   authenticated shell (layout.tsx) + screens:
       page.tsx               dashboard
-      orders/                list, [id] detail, new (5-step wizard)
-      suppliers/             list + performance tab, [id] detail
-      budgets/
-      inventory/
-      shipments/
-      analytics/
-      calendar/
-      documents/
-      actions/               action center
-      settings/              users (admin)
-    api/                     route handlers (REST from the README), cron endpoint, auth
-  components/
-    ui/                      primitives: Button, Card, Pill/StatusBadge, Segment, Select, Dialog, Table, ProgressBar
-    shell/                   Sidebar, Header, NotificationsPopover, GlobalSearch
-    charts/                  BarChart, StackedBar, Donut, Timeline
-    <feature>/               screen-specific components (orders/, po-detail/, create-po/, ...)
+      orders/                list, [number] detail, new (wizard)
+      suppliers/             list (+ ?tab=performance), [id], [id]/edit, new
+      budgets/  products/  inventory/  shipments/  analytics/  calendar/  documents/  actions/
+      settings/              users (admin) + admin audit trail
+      account/               change own password
+    (print)/orders/[number]/print   printable PO
+    api/auth/  api/documents/[id]  api/orders/export (CSV)
+  components/ ui/ shell/ orders/ po-detail/ create-po/ suppliers/ budgets/ products/ settings/
   lib/
-    domain/                  pure rules: health, payment-status, totals, stockout, budget, customs, notifications, calendar
-    domain/__tests__/        Vitest, fixtures from prototype sample POs
-    status.ts                enum → label + tone mapping
-    format.ts                money/date formatting
-    validation/              Zod schemas shared by API and forms
-    auth/                    Auth.js config, role → permission map, requireRole()
-    db.ts                    Prisma client singleton
-    storage.ts               file storage (local disk now; S3/R2 later)
-  generated/prisma/          Prisma client (generated, git-ignored)
-  proxy.ts                   signed-out visitors → /login
-  auth.ts                    Auth.js config
+    domain/                  pure rules (+ __tests__)
+    validation/              Zod schemas
+    auth/                    permissions.ts, session.ts (requireUser/requirePermission/assertPermission)
+    dates.ts format.ts status.ts storage.ts tracking.ts rate-limit.ts db.ts prisma-client.ts
   server/
-    services/                mutations: transaction + permission + ActivityLog + health recalc
-    queries/                 read models for each screen (dashboard, orders, analytics, ...)
-    jobs/                    daily recalculation, notification generation, email digest
-tests/e2e/                   Playwright
-docker-compose.yml           local Postgres
-prisma.config.ts             Prisma CLI config (datasource URL, seed command)
+    services/                mutations (base, master, po, notifications, users)
+    queries/                 read models (pos, orders, po-detail, suppliers, budgets, insights, shell)
+    jobs/                    daily job, notification sync, scheduler, digest
+    recalc.ts error-log.ts
+  auth.ts proxy.ts instrumentation.ts
 ```
+
+## Decisions beyond the spec
+
+- Supplier lead time / on-time rate are computed from completed orders (`refreshSupplierStats`) and stored on Supplier.
+- Budget buckets: purchased = shipped or closed (invoiced); committed = sent/confirmed not yet shipped.
+- Health rule 1 names the payment ("Deposit/Balance overdue since …"); received POs read "All goods received".
+- Payment status is OVERDUE whenever an unpaid payment is past due, even if partly paid.
+- Customs docs: marking one missing sets DOCUMENTS_REQUIRED; resolving moves on (IN_CLEARANCE at import customs).
+- Receiving goods updates stock, marks the shipment delivered and customs cleared.
+- "Create & mark as sent" does not email the supplier; use Message supplier / Print PO.
 
 ## Commands
 
 - `npm run dev` / `npm run build` / `npm start`
-- `npm test` (Vitest), `npm run lint`, `npm run typecheck`
+- `npm test` (Vitest), `npm run test:e2e` (Playwright; against a running/seeded app, reseed after), `npm run lint`, `npm run typecheck`
+- `npm run jobs:daily`, `npm run import -- <suppliers|products|pos> <file>`, `npm run create-admin -- --email … --password …`, `npm run db:fresh` (empty DB)
 - `npm run db:migrate` (new migration after schema change), `npm run db:deploy`, `npm run db:seed` (wipes + reloads sample data), `npm run db:reset`, `npm run db:studio`
 - After changing `prisma/schema.prisma`: `npm run db:migrate -- --name <change>`, then `npx prisma generate` (Prisma 7 migrate does not regenerate the client).
 
