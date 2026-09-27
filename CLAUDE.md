@@ -35,6 +35,7 @@ The app is hosted **locally** (no cloud server):
 - Email: optional nightly digest when `SMTP_URL` is set (`server/jobs/digest.ts`).
 - Errors: `onRequestError` appends to `logs/errors.log` (stand-in for Sentry).
 - Windows helpers: `setup-windows.bat`, `start-windows.bat`, `update-windows.bat`.
+- VPS option: `Dockerfile` + `docker-compose.prod.yml` (app, postgres, caddy HTTPS, nightly `backup`), scripts in `deploy/` (`setup-server.sh`, `deploy.sh`, `update.sh`, `backup.sh`, `docker-entrypoint.sh` runs `prisma migrate deploy`), guide in `docs/DEPLOY-VULTR.md`. Settings from `.env` (see `.env.production.example`).
 - Runs with `npm run build && npm start` on port 3000; `AUTH_TRUST_HOST=true` is required outside Vercel.
 
 ## Conventions

@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+.env
+.env.*
+!.env.example
+!.env.production.example
+storage
+logs
+backups
+test-results
+playwright-report
+design/prototype
+src/generated
+*.log

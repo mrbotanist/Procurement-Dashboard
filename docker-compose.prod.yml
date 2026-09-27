@@ -1,0 +1,74 @@
+# Production stack for a VPS: app + PostgreSQL + Caddy (HTTPS) + nightly backups.
+#   docker compose -f docker-compose.prod.yml up -d --build
+# Settings come from .env (copy .env.production.example).
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fpv
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: fpv_procurement
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fpv -d fpv_procurement"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    image: fpv-procurement-hub:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://fpv:${POSTGRES_PASSWORD}@db:5432/fpv_procurement?schema=public
+      AUTH_TRUST_HOST: "true"
+      STORAGE_DIR: /app/storage
+      APP_URL: https://${DOMAIN}
+    volumes:
+      - uploads:/app/storage
+      - logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    entrypoint: ["sh", "/backup.sh"]
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+      TZ: ${APP_TIMEZONE:-Asia/Dubai}
+    volumes:
+      - ./deploy/backup.sh:/backup.sh:ro
+      - ./backups:/backups
+      - uploads:/uploads:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  uploads:
+  logs:
+  caddy_data:
+  caddy_config:

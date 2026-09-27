@@ -11,6 +11,12 @@ It runs on your own computer. The app, the database and uploaded files all stay 
 - **Docker Desktop**: https://www.docker.com/products/docker-desktop — runs the PostgreSQL database. It must be open whenever you use the app.
   (Alternatively install PostgreSQL 16 yourself and set `DATABASE_URL` in `.env`.)
 
+## Hosting online (VPS)
+
+To run it on a server with its own web address and HTTPS instead of your PC, follow
+**[docs/DEPLOY-VULTR.md](docs/DEPLOY-VULTR.md)** (works on any Ubuntu VPS). It uses Docker for the
+app, database, HTTPS and nightly backups.
+
 ## First-time setup
 
 ### Windows (easiest)
