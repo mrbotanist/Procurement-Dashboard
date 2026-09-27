@@ -32,7 +32,8 @@ The app is hosted **locally** (no cloud server):
 - Database: PostgreSQL via `docker-compose.yml` or a native install. `DATABASE_URL` in `.env`.
 - Files: `src/lib/storage.ts` saves uploads under `STORAGE_DIR` (default `./storage`, git-ignored); downloads go through the authenticated `/api/documents/[id]` route. Seed documents have no file; the route serves a generated placeholder PDF for `seed/` keys. Swap the three storage functions for S3/R2 later.
 - Jobs: `src/instrumentation.ts` starts `server/jobs/scheduler.ts` (node-cron, 00:05 `APP_TIMEZONE`, plus one run 15 s after start). `npm run jobs:daily` runs it by hand. `DISABLE_JOBS=1` turns it off.
-- Email: optional nightly digest when `SMTP_URL` is set (`server/jobs/digest.ts`).
+- Email: `src/server/mail.ts` (`SMTP_URL`; `"console"` writes to `logs/mail.log`). Used for sign-in codes and the optional nightly digest (`server/jobs/digest.ts`). `npm run mail:test -- <to>`.
+- Two-step sign-in: `TWO_FACTOR` = `off` | `all` | roles (`ADMIN,FINANCE`). Password checked first (`src/server/login.ts`), then a 6-digit emailed code (`LoginChallenge`: HMAC of the code, 10 min, 5 attempts, 4 sends). `authorize` rejects password-only sign-in for those roles.
 - Errors: `onRequestError` appends to `logs/errors.log` (stand-in for Sentry).
 - Windows helpers: `setup-windows.bat`, `start-windows.bat`, `update-windows.bat`.
 - VPS option: `Dockerfile` + `docker-compose.prod.yml` (app, postgres, caddy HTTPS, nightly `backup`), scripts in `deploy/` (`setup-server.sh`, `deploy.sh`, `update.sh`, `backup.sh`, `docker-entrypoint.sh` runs `prisma migrate deploy`), guide in `docs/DEPLOY-VULTR.md`. Settings from `.env` (see `.env.production.example`).
@@ -160,7 +161,7 @@ src/
 
 - `npm run dev` / `npm run build` / `npm start`
 - `npm test` (Vitest), `npm run test:e2e` (Playwright; against a running/seeded app, reseed after), `npm run lint`, `npm run typecheck`
-- `npm run jobs:daily`, `npm run import -- <suppliers|products|pos> <file>`, `npm run create-admin -- --email … --password …`, `npm run db:fresh` (empty DB)
+- `npm run jobs:daily`, `npm run mail:test -- you@x.ae`, `npm run import -- <suppliers|products|pos> <file>`, `npm run create-admin -- --email … --password …`, `npm run db:fresh` (empty DB)
 - `npm run db:migrate` (new migration after schema change), `npm run db:deploy`, `npm run db:seed` (wipes + reloads sample data), `npm run db:reset`, `npm run db:studio`
 - After changing `prisma/schema.prisma`: `npm run db:migrate -- --name <change>`, then `npx prisma generate` (Prisma 7 migrate does not regenerate the client).
 

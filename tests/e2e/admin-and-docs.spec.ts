@@ -43,16 +43,16 @@ test("admin adds a user who can then sign in", async ({ page }) => {
   await page.goto("/settings");
   await page.getByRole("button", { name: "+ Add user" }).click();
   const d = page.getByRole("dialog");
-  await d.getByLabel("Name").fill("E2E Viewer");
+  await d.getByLabel("Name").fill("E2E Warehouse");
   await d.getByLabel("Work email").fill(email);
-  await d.getByLabel("Role").selectOption("MANAGEMENT");
+  await d.getByLabel("Role").selectOption("WAREHOUSE"); // Management needs a sign-in code in e2e (playwright.config.ts)
   await d.getByLabel("Temporary password").fill("temporary-pass-1");
   await d.getByRole("button", { name: "Create user" }).click();
   await expect(page.getByText(email)).toBeVisible();
   await page.context().clearCookies();
   await login(page, email, "temporary-pass-1");
   await expect(page.getByRole("heading", { name: "Procurement Dashboard" })).toBeVisible();
-  // Management is read-only
+  // Warehouse can't create POs
   await expect(page.getByRole("link", { name: /Create Purchase Order|New PO/ })).toHaveCount(0);
 });
 
@@ -61,7 +61,10 @@ test("login is rate limited after repeated failures", async ({ page }) => {
   for (let i = 0; i < 6; i++) {
     await page.fill("#email", "ratelimit@fpvstore.ae");
     await page.fill("#password", `wrong-${i}`);
+    // Wait for the answer: React resets the form after each attempt.
+    const answered = page.waitForResponse((r) => r.request().method() === "POST" && r.url().includes("/login"));
     await page.click("button[type=submit]");
+    await answered;
     await expect(page.locator("p[role=alert]")).toBeVisible();
   }
   await expect(page.locator("p[role=alert]")).toHaveText(/Too many sign-in attempts/);

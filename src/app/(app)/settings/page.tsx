@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/Card";
 import { Page, PageHeader } from "@/components/ui/PageHeader";
 import { Pill } from "@/components/ui/Pill";
 import { requirePermission } from "@/lib/auth/session";
+import { twoFactorScope } from "@/lib/auth/two-factor";
 import { db } from "@/lib/db";
 import { toIsoDate } from "@/lib/dates";
 import { fmtDate } from "@/lib/format";
@@ -67,6 +68,7 @@ export default async function SettingsPage() {
           ))}
         </div>
       </Card>
+      <TwoFactorCard />
       <Card title="Recent admin activity" subtitle="Changes to suppliers, products, budgets, users and notifications. PO changes are on each PO.">
         {recent.map((a) => (
           <div key={a.id} className="flex gap-3 border-b border-neutral-200 py-2 text-sm last:border-b-0">
@@ -77,5 +79,37 @@ export default async function SettingsPage() {
         ))}
       </Card>
     </Page>
+  );
+}
+
+function TwoFactorCard() {
+  const scope = twoFactorScope(process.env.TWO_FACTOR);
+  const mail = process.env.SMTP_URL;
+  const who =
+    scope === "none" ? null : scope === "all" ? "everyone" : scope.map((r) => ROLE_LABEL[r as keyof typeof ROLE_LABEL] ?? r).join(", ");
+  return (
+    <Card
+      title="Two-step sign-in"
+      aside={<Pill label={who ? "On" : "Off"} tone={who ? "green" : "gray"} />}
+      subtitle="After the password, users enter a 6-digit code sent to their email."
+    >
+      <div className="flex flex-col gap-2 text-sm">
+        <p>{who ? <>Required for <b>{who}</b>.</> : "Not required for anyone. Sign-in uses the password only."}</p>
+        {who && !mail && (
+          <p role="alert" className="rounded-[10px] bg-red-bg px-3 py-2 text-[13px] font-medium text-red-fg">
+            Email isn&apos;t set up (SMTP_URL), so codes can&apos;t be sent and these users can&apos;t sign in.
+          </p>
+        )}
+        {who && mail === "console" && (
+          <p className="rounded-[10px] bg-orange-bg px-3 py-2 text-[13px] font-medium text-orange-fg">
+            Test mode: codes are written to logs/mail.log instead of being emailed.
+          </p>
+        )}
+        <p className="text-[13px] text-secondary">
+          Change it with <code>TWO_FACTOR</code> in the server&apos;s <code>.env</code> (<code>off</code>, <code>all</code>, or roles such as{" "}
+          <code>ADMIN,FINANCE</code>), then restart the app.
+        </p>
+      </div>
+    </Card>
   );
 }

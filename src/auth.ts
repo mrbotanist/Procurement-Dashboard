@@ -1,20 +1,20 @@
 import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
-import { z } from "zod";
-import { db } from "@/lib/db";
-import { isLimited, recordFailure, resetLimit } from "@/lib/rate-limit";
-
-const WINDOW = 15 * 60_000;
+import { requiresTwoFactor } from "@/lib/auth/two-factor";
+import { checkPassword, verifyCode } from "@/server/login";
 
 export class TooManyAttempts extends CredentialsSignin {
   code = "rate_limited";
 }
-
-const credentialsSchema = z.object({
-  email: z.email().transform((e) => e.toLowerCase().trim()),
-  password: z.string().min(1).max(200),
-});
+export class CodeRequired extends CredentialsSignin {
+  code = "code_required";
+}
+export class CodeInvalid extends CredentialsSignin {
+  code = "code_invalid";
+}
+export class CodeExpired extends CredentialsSignin {
+  code = "code_expired";
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
@@ -27,20 +27,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   providers: [
     Credentials({
-      credentials: { email: {}, password: {} },
+      credentials: { email: {}, password: {}, challengeId: {}, code: {} },
       async authorize(raw) {
-        const parsed = credentialsSchema.safeParse(raw);
-        if (!parsed.success) return null;
-        // After 5 failed attempts for an email, block it for 15 minutes.
-        const key = `login:${parsed.data.email}`;
-        if (isLimited(key, 5, WINDOW)) throw new TooManyAttempts();
-        const user = await db.user.findUnique({ where: { email: parsed.data.email } });
-        if (!user || !user.active || !(await bcrypt.compare(parsed.data.password, user.passwordHash))) {
-          recordFailure(key, WINDOW);
+        // Second step: the code emailed after the password was checked (src/server/login.ts).
+        if (raw.challengeId) {
+          const r = await verifyCode(raw.challengeId, raw.code);
+          if (r.ok) return r.user;
+          if (r.reason === "rate_limited") throw new TooManyAttempts();
+          throw r.reason === "invalid" ? new CodeInvalid() : new CodeExpired();
+        }
+        const r = await checkPassword(raw.email, raw.password);
+        if (!r.ok) {
+          if (r.reason === "rate_limited") throw new TooManyAttempts();
           return null;
         }
-        resetLimit(key);
-        return { id: user.id, name: user.name, email: user.email, role: user.role };
+        // A password alone is never enough when this role needs a code, even if the
+        // sign-in endpoint is called directly instead of through the login page.
+        if (requiresTwoFactor(r.user.role, process.env.TWO_FACTOR)) throw new CodeRequired();
+        return r.user;
       },
     }),
   ],

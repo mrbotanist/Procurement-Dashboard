@@ -95,10 +95,25 @@ npm run create-admin -- --email you@yourstore.ae --name "Your Name" --password "
 
 Then sign in, add your team under Settings, set brand budgets, and import or create suppliers and products.
 
+## Two-step sign-in (email codes)
+
+After the password, users can be asked for a 6-digit code sent to their email. Add to `.env` and restart the app:
+
+```
+SMTP_URL="smtp://USER:PASSWORD@smtp.yourprovider.com:587"
+MAIL_FROM="FPV Procurement Hub <procurement@yourstore.ae>"
+TWO_FACTOR="all"            # or only some roles: "ADMIN,FINANCE"
+```
+
+Check email first with `npm run mail:test -- you@yourstore.ae`. To try it without an email account, use
+`SMTP_URL="console"`: codes are then written to `logs/mail.log`. If email breaks and nobody can sign in, set
+`TWO_FACTOR="off"` and restart. **Settings** shows whether it is on. More detail in
+[docs/DEPLOY-VULTR.md](docs/DEPLOY-VULTR.md#email-and-two-step-sign-in-recommended).
+
 ## What runs automatically
 
 - **Daily check** at 00:05 (Asia/Dubai) and a few seconds after the app starts: marks overdue payments and late production, recalculates every order's health, creates notifications (delayed, overdue, due tomorrow, unconfirmed after 48 h, customs documents missing, arriving within 2 days) and clears ones that no longer apply. Run it by hand with `npm run jobs:daily`.
-- **Email digest** (optional): set `SMTP_URL` in `.env` to email open critical/attention items to admins, managers, finance and management each night.
+- **Email digest** (optional): with `SMTP_URL` set, emails open critical/attention items to admins, managers, finance and management each night.
 - **Error log**: server errors are written to `logs/errors.log`.
 
 ## Backups
@@ -123,6 +138,7 @@ docker compose exec -T postgres psql -U fpv fpv_procurement < backup.sql
 | port 5432 is already in use | Another PostgreSQL is running. Stop it, or change the port in `docker-compose.yml` and `DATABASE_URL`. |
 | port 3000 is already in use | `PORT=3001 npm start` (PowerShell: `$env:PORT=3001; npm start`). |
 | Too many sign-in attempts | Wait 15 minutes, or restart the app. |
+| Sign-in code never arrives | Check spam, run `npm run mail:test -- you@yourstore.ae`, or set `TWO_FACTOR="off"` and restart. |
 | Something went wrong | Check `logs/errors.log` and the terminal window. |
 
 ## For developers

@@ -144,6 +144,24 @@ model User {
   uploadedDocuments     Document[]
   activity              ActivityLog[]
   notifications         Notification[]
+  loginChallenges       LoginChallenge[]
+}
+
+// Two-step sign-in: a 6-digit code emailed after the password is checked (TWO_FACTOR in .env).
+// id is a random unguessable token held by the browser; only an HMAC of the code is stored.
+model LoginChallenge {
+  id         String    @id
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash   String
+  attempts   Int       @default(0)
+  sends      Int       @default(1)
+  lastSentAt DateTime  @default(now())
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
 }
 
 // ─── Master data ─────────────────────────────────────────────────────────────

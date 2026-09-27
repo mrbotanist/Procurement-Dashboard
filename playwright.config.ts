@@ -14,5 +14,12 @@ export default defineConfig({
   use: { baseURL: `http://localhost:${port}`, trace: "retain-on-failure", viewport: { width: 1440, height: 900 } },
   webServer: process.env.E2E_NO_SERVER
     ? undefined
-    : { command: `npx next start -p ${port}`, url: `http://localhost:${port}/login`, reuseExistingServer: true, timeout: 120_000 },
+    : {
+        command: `npx next start -p ${port}`,
+        url: `http://localhost:${port}/login`,
+        reuseExistingServer: true,
+        timeout: 120_000,
+        // Two-step sign-in for the Management user only; codes go to logs/mail.log (two-factor.spec.ts).
+        env: { TWO_FACTOR: "MANAGEMENT", SMTP_URL: "console", DISABLE_JOBS: "1" },
+      },
 });

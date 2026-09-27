@@ -139,16 +139,31 @@ docker compose -f docker-compose.prod.yml exec app npm run db:seed
 
 This **wipes everything** and loads the demo data with the `procurement` password for all sample users. Never run it on your real server.
 
-### Optional: nightly email digest
+### Email and two-step sign-in (recommended)
 
-Add to `.env` on the server, then `docker compose -f docker-compose.prod.yml up -d`:
+With email set up, users can be asked for a **6-digit code sent to their email** after their password,
+so a stolen or guessed password alone isn't enough. Email also turns on the nightly digest.
+
+Add to `.env` on the server (`nano .env`), then `docker compose -f docker-compose.prod.yml up -d`:
 
 ```
-SMTP_URL="smtp://user:password@smtp.yourprovider.com:587"
-DIGEST_FROM="FPV Procurement Hub <procurement@yourstore.ae>"
+SMTP_URL="smtp://USER:PASSWORD@smtp.yourprovider.com:587"
+MAIL_FROM="FPV Procurement Hub <procurement@yourstore.ae>"
+TWO_FACTOR="all"
 ```
 
-Note: Vultr blocks outgoing port 25 on new accounts; use your email provider's port 587.
+- `SMTP_URL`: your email provider's SMTP details (Google Workspace, Microsoft 365, Zoho, or a sending service
+  such as Brevo, Mailgun or Amazon SES). If the password has symbols like `@` or `/`, replace them:
+  `@` → `%40`, `/` → `%2F`, `:` → `%3A`.
+- `TWO_FACTOR`: `all` for everyone, or only some roles, e.g. `TWO_FACTOR="ADMIN,FINANCE"`. `off` turns it off.
+- **Test email before turning on `TWO_FACTOR`**: set `SMTP_URL` first, run
+  `docker compose -f docker-compose.prod.yml exec app npm run mail:test -- you@yourstore.ae`, and check the inbox
+  (and spam folder). Settings in the app shows whether two-step sign-in is on.
+- Codes expire after 10 minutes and work once. After 5 wrong passwords or codes the account is blocked for 15 minutes.
+- **Locked out because email stopped working?** Set `TWO_FACTOR="off"` in `.env`, run
+  `docker compose -f docker-compose.prod.yml up -d`, fix the email settings, then turn it back on.
+
+Vultr blocks outgoing port 25 on new accounts; use your provider's port 587.
 
 ---
 
@@ -160,6 +175,7 @@ Note: Vultr blocks outgoing port 25 on new accounts; use your email provider's p
 | Certificate / "not secure" warning | DNS wasn't ready when Caddy started. Once DNS works: `docker compose -f docker-compose.prod.yml restart caddy`, then `logs caddy` to see progress. |
 | Build stops with "Killed" | Not enough memory. Make sure the server has 2 GB RAM or that `setup-server.sh` added swap (`swapon --show`). |
 | "Set POSTGRES_PASSWORD in .env" | `.env` is missing; run `bash deploy/deploy.sh your-domain` again. |
+| Sign-in code email never arrives | Check the spam folder, then `docker compose -f docker-compose.prod.yml exec app npm run mail:test -- you@yourstore.ae` and `logs --tail 50 app` for the SMTP error. |
 | Something went wrong in the app | `docker compose -f docker-compose.prod.yml logs --tail 100 app` and `docker compose -f docker-compose.prod.yml exec app cat logs/errors.log` |
 
 **Keep `.env` safe** — it has the database password. Don't change `POSTGRES_PASSWORD` after the first start (the database was created with it).

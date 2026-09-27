@@ -19,6 +19,7 @@
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
     "jobs:daily": "tsx scripts/run-daily-job.ts",
+    "mail:test": "tsx scripts/mail-test.ts",
     "import": "tsx scripts/import.ts",
     "create-admin": "tsx scripts/create-admin.ts",
     "db:fresh": "prisma migrate reset --force"

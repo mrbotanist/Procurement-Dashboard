@@ -18,8 +18,11 @@ POSTGRES_PASSWORD="$(rand)"
 AUTH_SECRET="$(rand)"
 APP_TIMEZONE="Asia/Dubai"
 BACKUP_KEEP_DAYS=14
+# Email (sign-in codes, nightly digest): your provider's SMTP details, port 587.
 # SMTP_URL="smtp://user:password@smtp.example.com:587"
-# DIGEST_FROM="FPV Procurement Hub <procurement@yourstore.ae>"
+# MAIL_FROM="FPV Procurement Hub <procurement@yourstore.ae>"
+# Two-step sign-in with emailed codes (needs SMTP_URL): all, or roles like ADMIN,FINANCE
+# TWO_FACTOR="all"
 ENV
   chmod 600 .env
   echo "Created .env for $DOMAIN (keep this file safe; it holds the database password)."

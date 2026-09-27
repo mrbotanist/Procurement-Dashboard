@@ -34,5 +34,7 @@ export async function runDailyJob(db: Db, today: IsoDate, now: Date) {
     }
   }
   const notifications = await syncNotifications(db, today, now);
+  // Sign-in codes live 10 minutes; drop old ones.
+  await db.loginChallenge.deleteMany({ where: { createdAt: { lt: new Date(now.getTime() - 24 * 60 * 60_000) } } });
   return { checked: open.length, changed, notifications };
 }
